@@ -28,6 +28,24 @@ public UWC3NG_Death( iAttacker, iVictim, iHeadshot, iWeaponID )
 		}
 	}
 	
+	// Remove mole
+	if ( p_data_b[iVictim][PB_SKINSWITCHED] )
+	{
+		p_data_b[iVictim][PB_SKINSWITCHED] = false;
+		
+		// Reset the model
+		SHARED_ChangeSkin( iVictim, 0 );
+	}
+	
+	// Player is nomore hexed
+	if ( p_data_b[iVictim][PB_HEXED] )
+	{
+		p_data_b[iVictim][PB_HEXED] = false;
+				
+		// Change the skin
+		SHARED_ChangeSkin( iVictim, 0 ); // 0 = reset skin
+	}
+	
 	// Check for phoenix respawn
 	SKILL_PhoenixSpawn( iVictim );
 	
@@ -52,23 +70,19 @@ public UWC3NG_Death( iAttacker, iVictim, iHeadshot, iWeaponID )
 		remove_task( iVictim + TASK_SKIN );
 	}
 	
-	// Remove mole
-	if ( p_data_b[iVictim][PB_SKINSWITCHED] )
+	// Burning task
+	if ( task_exists( iVictim + TASK_BURNING ) )
 	{
-		p_data_b[iVictim][PB_SKINSWITCHED] = false;
-		
-		// Reset the model
-		SHARED_ChangeSkin( iVictim, 0 );
+		remove_task( iVictim + TASK_BURNING );
 	}
 	
-	// Remove the hex 
-	if ( p_data_b[iVictim][PB_HEXED] )
-	{
-		p_data_b[iVictim][PB_HEXED] = false;
-		
-		// Reset the model
-		SHARED_ChangeSkin( iVictim, 0 );
-	}
+	// Carrion Beetles disease
+	if ( p_data_b[iVictim][PB_CARRIONDOT] )
+		p_data_b[iVictim][PB_CARRIONDOT] = false;
+	
+	// Shadow Strike poison
+	if ( p_data_b[iVictim][PB_SHADOWDOT] )
+		p_data_b[iVictim][PB_SHADOWDOT] = false;
 	
 	// Remove items
 	ITEM_UserDied( iVictim );
@@ -341,7 +355,7 @@ public UWC3NG_DrawSprite( id )
 	
 	// Get all players
 	static players[32], numofplayers, i, iPlayerTeam;
-	get_players( players, numofplayers );
+	get_players( players, numofplayers, "a" );
 	
 	// Get the team
 	iPlayerTeam = get_user_team( id );
@@ -349,7 +363,20 @@ public UWC3NG_DrawSprite( id )
 	// Loop through all players 
 	for ( i = 0; i < numofplayers; ++i )
 	{
+		// Isn't in the same team
 		if ( get_user_team( players[i] ) != iPlayerTeam )
+		{
+			continue;
+		}
+		
+		// The player has no wcrepair/mend
+		if ( !p_data_skill[players[i]][SKILL_REPAIR] && !p_data_skill[players[i]][SKILL_MEND] )
+		{
+			continue;
+		}
+		
+		// The player shouldn't see an icon for him self
+		if ( players[i] == id )
 		{
 			continue;
 		}
@@ -381,117 +408,6 @@ public UWC3NG_DrawSprite( id )
 	
 	return;
 }
-
-/*
-// Draw a sprite above all players if they need repair armor or/and mend wounds
-public UWC3NG_DrawSprite()
-{
-	// Get all players
-	static j, players[32], numofplayers, ShowSpriteID;
-	get_players( players, numofplayers );
-	
-	// Some vars which we need soon
-	static CsArmorType:ArmorType, iArmor;
-	static iHealth, i, iTeam;
-	new bool:p_NeedArmor;
-	new bool:p_NeedHealth;
-	
-	// Here we save the skill level's from all players
-	static iLevelArmor, iLevelMend;
-	
-	// Loop through all players
-	for ( j = 0; j < numofplayers; ++j )
-	{
-		// The id from the player who should get the sprite above
-		ShowSpriteID = players[j];
-		
-		// The player isn't alive. Go to the next
-		if ( !is_user_alive( ShowSpriteID ) )
-		{
-			return;
-		}
-		
-		// Get the armor from this player
-		iArmor = cs_get_user_armor( ShowSpriteID, ArmorType );
-	
-		// Get the health
-		iHealth = get_user_health( ShowSpriteID );
-	
-		// Need this player armor?
-		p_NeedArmor = false;
-		if ( iArmor < 100 )
-		{
-			p_NeedArmor = true;
-		}
-	
-		// Need this player health?
-		p_NeedHealth = false;
-		if ( iHealth < PLAYER_get_maxhealth( ShowSpriteID ) )
-		{
-			p_NeedHealth = true;
-		}
-	
-		// Get the team from the player
-		iTeam = get_user_team( ShowSpriteID );
-	
-		// Loop through all alive team members
-		for ( i = 0; i < numofplayers; ++i )
-		{
-			// Himself need not a sprite
-			if ( ShowSpriteID != players[i] )
-			{
-				// Is the player alive?
-				if ( is_user_alive( players[i] ) )
-				{
-					// Is the player in the same team?
-					if ( get_user_team( players[i] ) == iTeam )
-					{
-						// Get the skill level from the player
-						iLevelArmor = p_data_skill[players[i]][SKILL_REPAIR];
-						iLevelMend = p_data_skill[players[i]][SKILL_MEND];
-				
-						// The player has repair armor & mend wounds
-						if ( iLevelArmor && iLevelMend )
-						{
-							if ( p_NeedArmor && p_NeedHealth )
-							{
-								// Show him the default sprite which we had detect
-								Create_Sprite( ShowSpriteID, players[i], g_iSprites[SPRITE_REPAIRMEND] );
-							}
-						}
-				
-						// uhhmm, the player has only repair armor :0
-						else if ( iLevelArmor )
-						{
-							// Need the player armor?
-							if ( p_NeedArmor )
-							{
-								// Show him the armor sprite
-								Create_Sprite( ShowSpriteID, players[i], g_iSprites[SPRITE_REPAIR] );
-							}
-						}
-				
-						// hmm, the player has only mend wounds :0
-						else if ( iLevelMend )
-						{
-							// Need the player health?
-							if ( p_NeedHealth )
-							{
-								// Show him the health sprite
-								Create_Sprite(ShowSpriteID, players[i], g_iSprites[SPRITE_MEND] );
-							}
-						}
-					} // end team check
-				} // end alive check
-			} // end himself check
-		} // end loop through all players
-	} // end loop through all players
-	
-	// Set up the task again
-	set_task( 5.0, "UWC3NG_DrawSprite", TASK_DRAW );
-	
-	return;
-}*/
 
 // Function will print a message in the center of the screen (from wc3ft)
 public UWC3NG_StatusText( id, iType, const fmt[] )
@@ -576,12 +492,89 @@ public UWC3NG_ShowSpecInfo( id, iTargetID )
 	get_user_name( iTargetID, szTargetName, 31 ); 
 	
 	new szMsg[512];
+	
+	// We save the names from the items
+	static ItemOneName[32], ItemTwoName[32];
 
 	// Create message
-	formatex( szMsg, charsmax( szMsg ), "%s Rank: %s [%d]   XP: %d", szTargetName, p_RankTitles[p_data[iTargetID][PLAYER_RANK]], p_data[iTargetID][PLAYER_LVL], p_data[iTargetID][PLAYER_XP] );
+	formatex( szMsg, charsmax( szMsg ), "%s^nRank: %s [LvL %d]  XP: %d^nItems:", szTargetName, p_RankTitles[p_data[iTargetID][PLAYER_RANK]], p_data[iTargetID][PLAYER_LVL], p_data[iTargetID][PLAYER_XP] );
+	
+	// copy the names from the items in the array
+	if ( g_iShopMenuItems[iTargetID][ITEM_SLOT_ONE] != ITEM_NONE )
+	{
+		copy( ItemOneName, charsmax( ItemOneName ), ShopmenuShort_Names[g_iShopMenuItems[iTargetID][ITEM_SLOT_ONE]] );
+	}
+			
+	if ( g_iShopMenuItems[iTargetID][ITEM_SLOT_TWO] != ITEM_NONE )
+	{
+		copy( ItemTwoName, charsmax( ItemTwoName ), ShopmenuShort_Names[g_iShopMenuItems[iTargetID][ITEM_SLOT_TWO]] );
+	}
+			
+	// The item is necklace. Add the charges
+	switch ( g_iShopMenuItems[iTargetID][ITEM_SLOT_ONE] ) 
+	{
+		case ITEM_NECKLACE: // Necklace
+		{
+			formatex( ItemOneName, charsmax( ItemOneName ), "%s[%d]", ItemOneName, g_iNecklaceCharges[iTargetID] );
+		}
+				
+		case ITEM_HELM: // Helm
+		{
+			formatex( ItemOneName, charsmax( ItemOneName ), "%s[%d]", ItemOneName, g_iHelmCharges[iTargetID] );
+		}
+				
+		case ITEM_RING: // Ring
+		{
+			formatex( ItemOneName, charsmax( ItemOneName ), "%s[%d]", ItemOneName, g_iTotalRings[iTargetID] );
+		}
+	}
+			
+	// Slot two check
+	switch ( g_iShopMenuItems[iTargetID][ITEM_SLOT_TWO] )
+	{
+		case ITEM_NECKLACE: // Necklace
+		{
+			formatex( ItemTwoName, charsmax( ItemTwoName ), "%s[%d]", ItemTwoName, g_iNecklaceCharges[iTargetID] );
+		}
+				
+		case ITEM_HELM: // Helm
+		{
+			formatex( ItemTwoName, charsmax( ItemTwoName ), "%s[%d]", ItemTwoName, g_iHelmCharges[iTargetID] );
+		}
+				
+		case ITEM_RING: // Ring
+		{
+			formatex( ItemTwoName, charsmax( ItemTwoName ), "%s[%d]", ItemTwoName, g_iTotalRings[iTargetID] );
+		}
+	}
+			
+	// The player has no items
+	if ( g_iShopMenuItems[iTargetID][ITEM_SLOT_ONE] == ITEM_NONE && g_iShopMenuItems[iTargetID][ITEM_SLOT_TWO] == ITEM_NONE )
+	{
+		// Player has no item, show him that and a little info
+		formatex ( szMsg, charsmax( szMsg ), "%s No Items", szMsg );
+	}
+			
+	// The player has two items
+	else if ( g_iShopMenuItems[iTargetID][ITEM_SLOT_ONE] > ITEM_NONE && g_iShopMenuItems[iTargetID][ITEM_SLOT_TWO] > ITEM_NONE )
+	{
+		formatex ( szMsg, charsmax( szMsg ), "%s Magic Items: %s and %s", szMsg, ItemOneName, ItemTwoName );
+	}
+			
+	// The player has only item slot one
+	else if ( g_iShopMenuItems[iTargetID][ITEM_SLOT_ONE] > ITEM_NONE )
+	{
+		formatex ( szMsg, charsmax( szMsg ), "%s Magic Item: %s", szMsg, ItemOneName );
+	}
+			
+	// The player has only item slot two
+	else if ( g_iShopMenuItems[iTargetID][ITEM_SLOT_TWO] > ITEM_NONE )
+	{
+		formatex ( szMsg, charsmax( szMsg ), "%s Magic Item: %s", szMsg, ItemTwoName );
+	}
 	
 	// Add the Health + Armor to the message
-	formatex( szMsg, charsmax( szMsg ), "%s^nHealth: %d^nArmor: %d", szMsg, get_user_health( iTargetID ), get_user_armor( iTargetID ) );
+	formatex( szMsg, charsmax( szMsg ), "%s^nHealth: %d  Armor: %d", szMsg, get_user_health( iTargetID ), get_user_armor( iTargetID ) );
 	
 	// Format the message
 	new Float:fSpecTime = SPEC_HOLDTIME;

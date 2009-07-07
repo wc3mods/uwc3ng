@@ -63,7 +63,7 @@ public ATTRIB_HandleMenu( id, key )
 	// The player has no available attribute points
 	else if ( p_data[id][AVAILABLE_ATTRIBS] <= 0 )
 	{
-		client_print( id, print_chat, "%s You do not have any attribute points to spend, earn more E-XP", MOD_NAME );
+		client_print( id, print_chat, "%s You do not have any attribute points to spend, earn more XP", MOD_NAME );
 		
 		return;
 	}
@@ -77,6 +77,12 @@ public ATTRIB_HandleMenu( id, key )
 	// Print him a message
 	client_print( id, print_chat, "%s You spend 1 attribute point to %s", MOD_NAME, Attribute_Names[key] );
 	
+	// The player skilled Strength, give him instant the extra hp
+	if ( key == ATTRIB_STRENGTH )
+	{
+		SKILL_DevotionAura( id );
+	}
+	
 	// Update the skills
 	SKILL_Update( id );
 	
@@ -84,6 +90,18 @@ public ATTRIB_HandleMenu( id, key )
 	if ( p_data[id][AVAILABLE_ATTRIBS] > 0 )
 	{
 		ATTRIB_ShowSelectMenu( id );
+	}
+	
+	// The player has more available skills, reopen the menu!
+	else if ( p_data[id][AVAILABLE_SKILL] > 0 )
+	{
+		SKILL_ShowMenu( id, p_data[id][SKILL_SIDE] );
+	}
+	
+	// He has available resists
+	else if ( p_data[id][AVAILABLE_RESISTS] > 0 )
+	{
+		RESIST_ShowSelectMenu( id );
 	}
 	
 	return;
@@ -102,18 +120,28 @@ public ATTRIB_Check_Available_points( id )
 		iAvailablePoints = MAX_ATTRIBS_AVAILABLE; 
 	}
 	
-	// Extra check (should never true)
-	if ( iSelectedAttribs > MAX_ATTRIBS_AVAILABLE )
+	// Look if we have Longterm XP
+	if ( !get_pcvar_num( CVAR_uwc3ng_save_xp ) )
 	{
-		iSelectedAttribs = 0;
-		iAvailablePoints = 0;
-		
-		p_data_b[id][RESET_ATTRIBS] = true;
-		ATTRIB_ResetAllNow( id );
+		iAvailablePoints /= get_pcvar_float( CVAR_uwc3ng_attrib_xpmodifier );
 	}
 	
-	// Save the available attrib points
-	p_data[id][AVAILABLE_ATTRIBS] = ( iAvailablePoints -  iSelectedAttribs );
+	// Calculate the difference
+	iAvailablePoints = ( iAvailablePoints -  iSelectedAttribs );
+	
+	// Check if the player has more attribpoints spent as available
+	if ( iAvailablePoints < 0 )
+	{
+		// We have to reset all skills
+		p_data_b[id][RESET_ATTRIBS] = true;
+		ATTRIB_ResetAllNow( id );
+			
+		// jump out the loop and the function
+		return;
+	}
+	
+	// Save the available attribpoints
+	p_data[id][AVAILABLE_ATTRIBS] = iAvailablePoints;
 	
 	return;
 }

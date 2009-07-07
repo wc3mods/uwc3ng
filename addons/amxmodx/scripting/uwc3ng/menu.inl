@@ -280,6 +280,48 @@ public MENU_HandleHelp( id, key )
 	
 	return;
 }
+
+// Uwc3ng reset skills menu
+public MENU_ResetSkills( id )
+{
+	static MenuText[512], KEYS;
+	
+	// Add the header
+	copy( MenuText, charsmax( MenuText ), "\yAre you sure you want to Reset your XP to 0?" );
+		
+	// Add every menupoint
+	add( MenuText, charsmax( MenuText ), "^n^n\w1. Yes" );
+	add( MenuText, charsmax( MenuText ), "^n\w2. No" );
+		
+	// Add the keys
+	KEYS = (1<<0) | (1<<1);
+	
+	// Show the menu
+	show_menu( id, KEYS, MenuText, 25, "ResetSkillmenu" );
+	
+	return;
+}
+
+// Handle reset skills menu
+public MENU_HandleResetSkills( id, key )
+{
+	if ( !is_user_connected( id ) )
+	{
+		return;
+	}
+	
+	// he pressed yes
+	if ( key == 0 )
+	{
+		// Reset the XPs to 1 (0 = not saved)
+		p_data[id][PLAYER_XP] = 1;
+		
+		// Check the skills etc.
+		XP_CheckLevel( id );
+	}
+	
+	return;
+}
 /* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
 *{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1031\\ f0\\ fs16 \n\\ par }
 */

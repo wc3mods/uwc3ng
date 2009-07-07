@@ -22,7 +22,8 @@ public client_damage( iAttacker, iVictim, iDamage, iWeapon, iBodyPart, TA )
 	SKILL_Damage( iAttacker, iVictim, iDamage, iBodyPart, iWeapon );
 	
 	// Check if we have to draw a sprite for wcrepair and wcmend
-	UWC3NG_DrawSprite( iVictim );
+	if ( get_pcvar_num( CVAR_uwc3ng_icons ) == 1 )
+		UWC3NG_DrawSprite( iVictim );
 	
 	return;
 }
@@ -42,7 +43,7 @@ public on_PlayerSpawn( id )
 	}
 	
 	// CSDM is maybe activated. We call on every spawn the "new round" function
-	on_CSDMRespawn( id )
+	on_CSDMRespawn( id );
 	
 	// If the user is a bot they should have a chance to buy an item
 	if ( is_user_bot( id ) && !get_pcvar_num( CVAR_uwc3ng_ignore_bots ) )
@@ -73,25 +74,17 @@ public on_PlayerSpawn( id )
 		}
 	}
 		
-	// Player is nomore hexed
-	if ( p_data_b[id][PB_HEXED] )
-	{
-		p_data_b[id][PB_HEXED] = false;
-				
-		// Change the skin
-		SHARED_ChangeSkin( id, 0 ); // 0 = reset skin
-	}
-	
 	// Set up the skills from this player
 	SKILL_Update( id );
 	
 	// Equipment reincarnation should only call on spawn. So we do it not in SKILL_Update
-	SKILL_CS_Reincarnation( id );
+	if ( !p_data_b[id][PLAYER_SPAWNGOD] )
+		SKILL_CS_Reincarnation( id );
 	
 	// Serpent Ward inital. Only called once for every spawn
 	SKILL_SerpentWard( id );
 	
-	// Blink Initial. Only called once for every spawn
+	// Initial. Only called once for every spawn
 	SKILL_Blink( id );
 	
 	// Phoenix Initial. Only called once for every spawn
@@ -100,14 +93,22 @@ public on_PlayerSpawn( id )
 	// Mend Wounds & Repair Armor & Dispell Hex reset
 	SHARED_MendRepairDispell_Reset( id );
 	
+	// Devotion Aura
+	SKILL_DevotionAura( id );
+	
+	// Remove the wards
+	if ( task_exists( TASK_LIGHT + id ) )
+		remove_task( TASK_LIGHT + id );
+	
 	// We reset this data now because we need it only for the reincarnation
 	p_data_b[id][PB_DIEDLASTROUND] = false;
 	
 	// He is nomore planting
 	p_data_b[id][PB_ISPLANTING] = false;
 	
-	// Check if we have to display a sprite for wcmend or/and wcrepair
-	UWC3NG_DrawSprite( id );
+	// Check if we have to draw a sprite for wcrepair and wcmend
+	if ( get_pcvar_num( CVAR_uwc3ng_icons ) == 1 )
+		UWC3NG_DrawSprite( id );
 	
 	// Reset Assist XP handler!
 	for ( new i = 0; i < MAX_PLAYERS; i++ )
@@ -164,8 +165,38 @@ public on_EndRound()
 			if ( task_exists( players[i] + TASK_WAVE ) )
 			{
 				remove_task( players[i] + TASK_WAVE );
-			}			
+			}
+			
+			// Burning Task
+			if ( task_exists( players[i] + TASK_BURNING ) )
+			{
+				SKILL_FlameStrike_Remove( players[i] );
+			}
+			
+			// Carrion Beetles disease
+			if ( p_data_b[players[i]][PB_CARRIONDOT] )
+				p_data_b[players[i]][PB_CARRIONDOT] = false;
+			
+			// Player is nomore hexed
+			if ( p_data_b[players[i]][PB_HEXED] )
+			{
+				p_data_b[players[i]][PB_HEXED] = false;
+			
+				// Change the skin
+				SHARED_ChangeSkin( players[i], 0 ); // 0 = reset skin
+			}
+			
+			// Shadow Strike poison
+			if ( p_data_b[players[i]][PB_SHADOWDOT] )
+				p_data_b[players[i]][PB_SHADOWDOT] = false;
 		}
+	}
+	
+	// Is save end round enabled?
+	if ( get_pcvar_num( CVAR_uwc3ng_save_end_round ) )
+	{
+		// Save all XP's
+		Player_SaveAll();
 	}
 }
 
@@ -238,6 +269,9 @@ public on_NewRound()
 		// Reset all attribs if the player want that
 		ATTRIB_ResetAllNow( players[i] );
 		
+		// Reset all resists if the player want that
+		RESIST_ResetAllNow( players[i] );
+		
 		// Copy the weapons to another array so we don't lose our currently weapons
 		SHARED_CopySavedWeapons( players[i] );
 		
@@ -251,9 +285,6 @@ public on_NewRound()
 		// Suicide Bomber
 		p_data_b[players[i]][PB_USED_SUICIDE] = false;
 		p_data_b[players[i]][PB_SUICIDEATTEMPT] = false;
-		
-		// Skin switched
-		p_data_b[players[i]][PB_SKINSWITCHED] = false;
 		
 		// Should we mole b/c of an item?
 		SHARED_MoleCheck( players[i], true ); // Only check item!
@@ -515,8 +546,8 @@ public on_FreezeTimeComplete()
 			// Show him the status text
 			PLAYER_ShowStatusText( players[i] );
 			
-			// Set their speed 
-			SKILL_UnholyAura( players[i] );
+			// Set their speed
+			set_task( 0.5, "SKILL_UnholyAura", players[i] + TASK_SPEED );
 		}
 	}
 }
@@ -762,7 +793,7 @@ public on_Drop( id )
 // Function called when a user's armor changes
 public on_Battery( id )
 {	
-	if ( !UWC3NG_Check() || !g_FreezeTimeOver )
+	if ( !UWC3NG_Check() )
 	{
 		return;
 	}
@@ -964,7 +995,7 @@ public TRIGGER_TraceLine( Float:v1[3], Float:v2[3], noMonsters, pentToSkip )
 				{
 					
 					// Check to see if the user should block this ultimate!
-					if ( !g_EndRound && ULTIMATE_IsImmun( iVictim ) )
+					if ( ULTIMATE_IsImmun( iVictim ) || p_data_b[iVictim][PLAYER_SPAWNGOD] || p_data_b[iVictim][PB_GOD] )
 					{
 						ULTIMATE_Blocked( iAttacker );
 					}
@@ -1010,7 +1041,29 @@ public TRIGGER_TraceLine( Float:v1[3], Float:v2[3], noMonsters, pentToSkip )
 					ULTIMATE_ResetCooldown( iAttacker, get_pcvar_num( CVAR_uwc3ng_ult_cooldown ) );
 				}
 			}
+		}
+	}
+	
+	return FMRES_IGNORED;
+}
 
+// Called when a player attacks an enemy
+public ham_TraceAttack( iVictim, iAttacker, Float:damage, Float:direction[3], tracehandle, damagebits )
+{
+	if ( !UWC3NG_Check() )
+	{
+		return HAM_IGNORED;
+	}
+	
+	// Make sure we have a valid victim
+	if ( is_user_alive( iVictim ) && SHARED_ValidPlayer( iVictim ) )
+	{
+		// We need to have a valid player!
+		if ( is_user_alive( iAttacker ) && SHARED_ValidPlayer( iAttacker ) )
+		{
+			// Get the hitzone
+			new hitgroup = get_tr2( tracehandle, TR_iHitgroup );
+				
 			// This is a nice check for Helm of Excellence
 			if ( ITEM_Has( iVictim, ITEM_HELM ) > ITEM_NONE )
 			{
@@ -1019,62 +1072,49 @@ public TRIGGER_TraceLine( Float:v1[3], Float:v2[3], noMonsters, pentToSkip )
 				{
 					if ( get_user_team( iAttacker ) == get_user_team( iVictim ) )
 					{
-						return FMRES_IGNORED;
+						return HAM_IGNORED;
 					}
 				}
 
 				// If its a headshot then we want to block it
-				if ( iHitZone & (1 << 1) )
+				if ( hitgroup == HIT_HEAD )
 				{
-					set_tr( TR_flFraction, 1.0 );
-					
-					// Make sure we have a valid attacker!
-					if ( SHARED_ValidPlayer( iAttacker ) )
+					// Do the check to see if we should flash the screen orange
+					new Float:fTime = halflife_time();
+					new Float:fDifference = fTime - fLastShotFired[iAttacker];
+
+					if ( fDifference < 0.1 && fDifference > 0.0 )
 					{
-						// Do the check to see if we should flash the screen orange
-						new Float:fTime = halflife_time();
-						new Float:fDifference = fTime - fLastShotFired[iAttacker];
+						Create_ScreenFade( iVictim, (1<<10), (1<<10), (1<<12), 0, 0, 255, 150 );
 
-						if ( fDifference < 0.1 && fDifference > 0.0 )
-						{
-							Create_ScreenFade( iVictim, (1<<10), (1<<10), (1<<12), 0, 0, 255, 150 );
-
-							// Lets remove a charge from the helm!
-							ITEM_RemoveCharge( iVictim, ITEM_HELM );
-						}
+						// Lets remove a charge from the helm!
+						ITEM_RemoveCharge( iVictim, ITEM_HELM );
 					}
-					
-					return FMRES_SUPERCEDE;
+									
+					return HAM_SUPERCEDE;
 				}
 			}
 
 			// Check to see if this user has night elf's evasion
-			if ( p_data_skill[iAttacker][SKILL_EVASION] > 0 )
+			if ( p_data_skill[iVictim][SKILL_EVASION] > 0 )
 			{
-				// Do the check to see if we should "evade" this shot
-				new Float:fTime = halflife_time();
-				new Float:fDifference = fTime - fLastShotFired[iAttacker];
-
-				if ( SHARED_ValidPlayer( iAttacker ) && fDifference < 0.1 && fDifference > 0.0 )
+				if ( SHARED_ValidPlayer( iAttacker ) )
 				{
-
 					// Friendly fire is off! - This means we shouldn't evade since no damage will be done!
 					if ( !get_pcvar_num( CVAR_mp_friendlyfire ) )
 					{
 						if ( get_user_team( iAttacker ) == get_user_team( iVictim ) )
 						{
-							return FMRES_IGNORED;
+							return HAM_IGNORED;
 						}
 					}
 					
 					// Then we should evade this shot!
-					if ( SKILL_Evasion( iVictim, iHitZone ) )
+					if ( SKILL_Evasion( iVictim, hitgroup ) )
 					{
-						set_tr( TR_flFraction, 1.0 );
-						
 						UWC3NG_StatusText( iVictim, TXT_SKILL, "You have evaded a shot!" );
 
-						return FMRES_SUPERCEDE;
+						return HAM_SUPERCEDE;
 					}
 				}
 			}
@@ -1082,59 +1122,59 @@ public TRIGGER_TraceLine( Float:v1[3], Float:v2[3], noMonsters, pentToSkip )
 			// Mole protectant
 			if ( p_data_b[iAttacker][PB_SKINSWITCHED] && ITEM_Has( iVictim, ITEM_PROTECTANT ) > ITEM_NONE )
 			{	
-				new Float:fTime = halflife_time();
-
-				if ( fTime - fLastShotFired[iAttacker] < 0.1  )
+				// Friendly fire is off! - This means we shouldn't evade since no damage will be done!
+				if ( !get_pcvar_num( CVAR_mp_friendlyfire ) )
 				{
-					client_print( iVictim, print_chat, "%s A shot by a mole was deflected", MOD_NAME );
-
-					set_tr( TR_flFraction, 1.0 );
-
-					return FMRES_SUPERCEDE;
+					if ( get_user_team( iAttacker ) == get_user_team( iVictim ) )
+					{
+						return HAM_IGNORED;
+					}
 				}
+					
+				client_print( iVictim, print_chat, "%s A shot by a mole was deflected", MOD_NAME );
+				return HAM_SUPERCEDE;
 			}
 
 			// Check for Big Bad Voodoo's ultimate!
 			if ( p_data_b[iVictim][PB_GOD] )
 			{
-				
 				new bool:bBlockDamage = true;
-				
+			
 				// Do we allow this person to be attacked by this player?
 				if ( p_data_b[iAttacker][PB_BIGBAD_ATTACKER] )
 				{
 					bBlockDamage = false;
 				}
-
+				
 				// Check to see if immunity is available for the attacker
-				else if ( ULTIMATE_IsImmun( iAttacker ) )
+				else if ( p_data_b[iAttacker][PB_BLINK] )
 				{
-					// Remove charge and display message to attacker
-					//ULT_RemoveCharge( iAttacker, 1 );
-
 					// Display message about user's ultimate being blocked!
 					ULTIMATE_Blocked( iVictim );
 
 					// This user can attack someone with big bad voodoo!
 					p_data_b[iAttacker][PB_BIGBAD_ATTACKER] = true;
 
+					// The player should get damage
+					bBlockDamage = false;
+					
 					// Reset the attacker dmg
 					set_task( get_pcvar_float( CVAR_uwc3ng_ult_cooldown ), "_SKILL_ResetBigBadAttacker", TASK_BIGBADATTACKER + iAttacker );
 				}
-
+				
 				// Block the damage!
 				if ( bBlockDamage )
 				{
-					set_tr( TR_flFraction, 1.0 );
-
-					return FMRES_SUPERCEDE;
+					return HAM_SUPERCEDE;
 				}
 			}
 		}
 	}
 	
-	return FMRES_IGNORED;
+	return HAM_IGNORED;
 }
+	
+	
 
 // Player prethink (for speed etcetc)
 public fwd_playerprethink( id )
@@ -1147,13 +1187,13 @@ public fwd_playerprethink( id )
 	if ( is_user_alive( id ) )
 	{
 		// This is used so we can't hear the undead's footsteps at level 3
-		if ( p_data_skill[id][SKILL_UNHOLYAURA] > 0 && !p_data_b[id][PB_STUNNED] && !p_data_b[id][PB_SLOWED] )
+		if ( ( p_data_skill[id][SKILL_UNHOLYAURA] || p_data_attrib[id][ATTRIB_AGILITY] ) && !p_data_b[id][PB_STUNNED] && !p_data_b[id][PB_SLOWED] )
 		{
 			new Float:vel[3];
 			entity_get_vector( id, EV_VEC_velocity, vel );
-
+			
 			// When this is true, the user is walking...  lets hope :P
-			if ( vector_length( vel ) < 180.0 )
+			if ( vector_length( vel ) < 225.0 )
 			{
 				entity_set_int( id, EV_INT_flTimeStepSound, 999 );
 			}

@@ -324,7 +324,7 @@ public SKILL_PhoenixSpawn( id )
 	}
 	
 	// The player was respawned this round
-	if ( p_data_b[id][PB_RESPAWNED] )
+	if ( p_data_b[id][PB_RESPAWNED] || p_data_b[id][PB_RESPAWNED_TWICE] )
 	{
 		return;
 	}
@@ -403,7 +403,7 @@ public SKILL_SiphonArmor( iAttacker, iVictim )
 	new iSkillLevel = p_data_skill[iAttacker][SKILL_SIPHONARMOR];
 	
 	// Has this player siphon ammo?
-	if ( iSkillLevel && !p_data_b[iAttacker][PB_HEXED] )
+	if ( iSkillLevel )
 	{
 		// Get the armor from the victim
 		static iVictimArmor, CsArmorType:VictimArmorType;
@@ -653,7 +653,7 @@ public _SKILL_LocustEffect( parm[] )
 		new iDamage = random_num( LOCUSTSWARM_DMG_MIN, LOCUSTSWARM_DMG_MAX );
 		
 		// The player has skilled intellect, add the bonus
-		if ( p_data_attrib[iAttacker][ATTRIB_INTELLECT] == INTELLECT_LOCUST )
+		if ( p_data_attrib[iAttacker][ATTRIB_INTELLECT] >= INTELLECT_LOCUST )
 		{
 			iDamage += INTELLECT_LOCUST_BONUS;
 		}

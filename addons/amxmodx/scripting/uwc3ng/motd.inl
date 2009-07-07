@@ -104,23 +104,20 @@ public MOTD_CharacterSheet( id, iShowID )
 	add( ShowMessage, charsmax( ShowMessage ), "<center><table width=800 border=1 cellpadding=4 cellspacing=4>" );
 	add( ShowMessage, charsmax( ShowMessage ), "<tr><td valign=top width=50%><font color=#FFB000>" );
 	
-	// Okay, let us begin to fill the motd with infors
+	// Okay, let us begin to fill the motd with infos
 	formatex( ShowMessage, charsmax( ShowMessage ), "%sPlayer Name: %s <br>", ShowMessage, PlayerName );
 	formatex( ShowMessage, charsmax( ShowMessage ), "%sPlayer Level: %d <br>", ShowMessage, p_data[id][PLAYER_LVL] );
 	formatex( ShowMessage, charsmax( ShowMessage ), "%sPlayer Rank: %s <br>", ShowMessage, p_RankTitles[p_data[id][PLAYER_RANK]] );
 	formatex( ShowMessage, charsmax( ShowMessage ), "%sSkillpts Available: %d <br>", ShowMessage, p_data[id][AVAILABLE_SKILL] );
-	
+	formatex( ShowMessage, charsmax( ShowMessage ), "%sAttribute Pts Available: %d <br>", ShowMessage, p_data[id][AVAILABLE_ATTRIBS] );
+	formatex( ShowMessage, charsmax( ShowMessage ), "%sResistance Pts Available: %d <br>", ShowMessage, p_data[id][AVAILABLE_RESISTS] );
+		
 	// We need some crappy stuff between this :P
 	add( ShowMessage, charsmax( ShowMessage ), "</td><td valign=top width=50%><font color=#FFB000>" );
 	
 	// More infos...
-	formatex( ShowMessage, charsmax( ShowMessage ), "%sPlayer XP: %d <br>", ShowMessage, PlayerXP );
 	formatex( ShowMessage, charsmax( ShowMessage ), "%sPlayer XP: %d / %d <br>", ShowMessage, PlayerXP, p_NextLevelXP );
-	add( ShowMessage, charsmax( ShowMessage ), "XP Needed: NA <br>" );
 	formatex( ShowMessage, charsmax( ShowMessage ), "%sXP Needed: %d <br>", ShowMessage, p_XPNeeded );
-	formatex( ShowMessage, charsmax( ShowMessage ), "%sEnhancement XP: %d <br>", ShowMessage, PlayerXP );
-	formatex( ShowMessage, charsmax( ShowMessage ), "%sAttribute Pts Available: %d <br>", ShowMessage, p_data[id][AVAILABLE_ATTRIBS] );
-	formatex( ShowMessage, charsmax( ShowMessage ), "%sResistance Pts Available: %d <br>", ShowMessage, p_data[id][AVAILABLE_RESISTS] );
 	
 	// More crappy stuff
 	add( ShowMessage, charsmax( ShowMessage ), "</td></tr><tr><td valign=top><font color=#FFB000>" );

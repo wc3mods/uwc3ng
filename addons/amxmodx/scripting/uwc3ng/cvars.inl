@@ -6,7 +6,7 @@ public Load_Cvars()
 	uwc3ng_enabled = register_cvar ( "uwc3ng_enabled", "1" );
 	
 	// Where we save the xps and skills etc?
-	CVAR_uwc3ng_savexp = register_cvar ( "uwc3ng_savexp_sql", "2" ); // 0 = MySQL, 1 = SQLLITE, 2 = Nvault
+	CVAR_uwc3ng_savexp = register_cvar ( "uwc3ng_savexp_sql", "1" ); // 0 = MySQL, 1 = SQLLITE
 	
 	// Should we save the xps?
 	CVAR_uwc3ng_save_xp = register_cvar ( "uwc3ng_save_xp", "1" ); // 1 = enabled, 0 = disabled
@@ -25,7 +25,10 @@ public Load_Cvars()
 	CVAR_uwc3ng_min_players = register_cvar ( "uwc3ng_min_players", "4" ); // Maximum for players to get / lose xps
 	CVAR_uwc3ng_xpmultiplier = register_cvar ( "uwc3ng_xpmultiplier", "1.0" ); // Multiple all xps with this value
 	CVAR_uwc3ng_startlevel = register_cvar ( "uwc3ng_startlevel", "0" ); // Define the startlevel of each player if he connects to the server
-	
+	CVAR_uwc3ng_resist_xpmodifier = register_cvar ( "uwc3ng_resist_xpmodifier", "0.5" ); // Longterm XP resistpoints modifier
+	CVAR_uwc3ng_attrib_xpmodifier = register_cvar ( "uwc3ng_attrib_xpmodifier", "0.5" ); // Longterm XP attribpoints modifier
+	CVAR_uwc3ng_save_end_round = register_cvar ( "uwc3ng_save_end_round", "1" ); // Save xp at the end of each round (may cause lag, default is 1)
+
 	// Psychostats
 	CVAR_uwc3ng_psychostats = register_cvar ( "uwc3ng_enable_psychostats", "0" ); // 1 = Enable log for psychostats, 0 = disable log for psychostats
 	
@@ -39,6 +42,7 @@ public Load_Cvars()
 	CVAR_uwc3ng_entangle_drop = register_cvar ( "uwc3ng_entangle_drop", "0" );
 	CVAR_uwc3ng_spec_position = register_cvar ( "uwc3ng_spec_position", "0" );
 	CVAR_uwc3ng_minmodels = register_cvar ( "uwc3ng_minmodels", "1" ); // Enable or disable minmodels check
+	CVAR_uwc3ng_icons = register_cvar ( "uwc3ng_icons", "1" ); // Enable or Disable icons for wcrepair and wcmend
 	
 	// Items
 	CVAR_uwc3ng_boots = register_cvar ( "uwc3ng_boots", "0.10" );

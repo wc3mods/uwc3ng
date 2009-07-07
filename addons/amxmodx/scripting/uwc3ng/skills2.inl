@@ -6,7 +6,7 @@ public SKILL_SpikedCarapace( iAttacker, iVictim, iDamage, iHitPlace )
 	new iLevel = p_data_skill[iVictim][SKILL_SPIKED];
 	
 	// Has this player spiked carapace?
-	if ( iLevel && !p_data_b[iVictim][PB_HEXED] )
+	if ( iLevel )
 	{
 		new iTemp = floatround( float( iDamage ) * p_spiked[iLevel-1] );
 		
@@ -65,7 +65,7 @@ public SKILL_WcRepair( id )
 	// Amount of repairs are calculated with the level from the player
 	if ( p_data[id][P_REPAIR] >= ( p_data[id][PLAYER_LVL] / REPAIR_DIVISOR ) )
 	{
-		client_print( id, print_chat, "%s You have already performed the maximum number of repairs for this round", MOD_NAME );
+		UWC3NG_StatusText( id, TXT_SKILL, "You have already performed the maximum number of repairs for this round" );
 		
 		return;
 	}
@@ -82,8 +82,10 @@ public SKILL_WcRepair( id )
 	// Need this player repair?
 	if ( iCurArmor <= 0 || iCurArmor >= 100 )
 	{
-		client_print( id, print_chat, "%s %s does not need armor repair at this time", MOD_NAME, FriendName );
-		
+		static ShownText[256];
+		formatex( ShownText, charsmax( ShownText ), "%s does not need armor repair at this time", FriendName );
+		UWC3NG_StatusText( id, TXT_SKILL, ShownText );
+				
 		return;
 	}
 	
@@ -108,8 +110,10 @@ public SKILL_WcRepair( id )
 	Create_Pentagram( origin, g_iSprites[SPRITE_P_REPAIR] )
 	
 	// Print a message to the friend
-	client_print( FriendID, print_chat, "%s %s has made some repairs to your armor", MOD_NAME, SkillOwnerName );
-	
+	static ShownText[256];
+	formatex( ShownText, charsmax( ShownText ), "%s has made some repairs to your armor", SkillOwnerName );
+	UWC3NG_StatusText( id, TXT_SKILL, ShownText );
+		
 	// Play the repair sound
 	 emit_sound ( id, CHAN_ITEM, g_szSounds[SOUND_REPAIR], 1.0, ATTN_NORM, 0, PITCH_NORM );
 	
@@ -150,7 +154,7 @@ public SKILL_WcMend( id )
 	// Amount of heals are calculated with the level from the player
 	if ( p_data[id][P_MEND] >= ( p_data[id][PLAYER_LVL] / MEND_DIVISOR ) )
 	{
-		client_print( id, print_chat, "%s You have already mended the maximum number of wounds for this round", MOD_NAME );
+		UWC3NG_StatusText( id, TXT_SKILL, "You have already mended the maximum number of wounds for this round" );
 		
 		return;
 	}
@@ -168,8 +172,10 @@ public SKILL_WcMend( id )
 	// Need this player mend?
 	if ( iHealth >= iMaxHealth )
 	{
-		client_print( id, print_chat, "%s %s does not have wounds to be mended at this time", MOD_NAME, FriendName );
-		
+		static ShownText[256];
+		formatex( ShownText, charsmax( ShownText ), "%s does not have wounds to be mended at this time", FriendName );
+		UWC3NG_StatusText( id, TXT_SKILL, ShownText );
+				
 		return;
 	}
 	
@@ -194,8 +200,10 @@ public SKILL_WcMend( id )
 	Create_Pentagram( origin, g_iSprites[SPRITE_P_MEND] )
 	
 	// Print a message to the friend
-	client_print( FriendID, print_chat, "%s %s has provided basic medical care to you", MOD_NAME, SkillOwnerName );
-	
+	static ShownText[256];
+	formatex( ShownText, charsmax( ShownText ), "%s has provided basic medical care to you", SkillOwnerName );
+	UWC3NG_StatusText( id, TXT_SKILL, ShownText );
+		
 	// Play the mend sound
 	 emit_sound ( id, CHAN_ITEM, g_szSounds[SOUND_MEND], 1.0, ATTN_NORM, 0, PITCH_NORM );
 	
@@ -231,14 +239,6 @@ public SKILL_UnholyAura( id )
 	
 	if ( !is_user_alive( id ) )
 	{
-		return;
-	}
-	
-	// Player is hexed
-	if ( p_data_b[id][PB_HEXED] )
-	{
-		set_user_maxspeed( id, HEX_SPEED );
-		
 		return;
 	}
 	
@@ -334,7 +334,7 @@ public SKILL_UnholyAura( id )
 	}
 
 	// Change the user's speed!
-	if ( fNewSpeed > 0.0 )
+	if ( fNewSpeed > 0.0 && !p_data_b[id][PB_NORMALSPEED] )
 	{
 		set_user_maxspeed( id, fNewSpeed );
 
@@ -374,14 +374,14 @@ public SKILL_Hex( iAttacker, iVictim )
 	new iSkillLevel = p_data_skill[iAttacker][SKILL_HEX];
 	static Float:iHexChance;
 	
-	// Has this player hex? / the victim has mole, he is immun
-	if ( iSkillLevel && !p_data_b[iVictim][PB_HEXED] && !p_data_b[iVictim][PB_SKINSWITCHED] )
+	// the victim has mole, he is immun
+	if ( iSkillLevel && !p_data_b[iVictim][PB_SKINSWITCHED] && !p_data_b[iVictim][PB_HEXED] )
 	{
 		// Add the hex chance
 		iHexChance = p_hex[iSkillLevel-1];
 		
 		// The player has skilled intellect, add the bonus
-		if ( p_data_attrib[iAttacker][ATTRIB_INTELLECT] == INTELLECT_HEX )
+		if ( p_data_attrib[iAttacker][ATTRIB_INTELLECT] >= INTELLECT_HEX )
 		{
 			iHexChance += INTELLECT_HEX_BONUS;
 		}
@@ -390,7 +390,7 @@ public SKILL_Hex( iAttacker, iVictim )
 		if ( random_float( 0.0, 1.0 ) <= iHexChance )
 		{
 			// Is the player immun?
-			if ( ULTIMATE_IsImmun( iVictim ) || p_data_b[iVictim][PB_CANT_RENDER] )
+			if ( p_data_b[iVictim][PB_CANT_RENDER] )
 			{
 				return;
 			}
@@ -398,14 +398,12 @@ public SKILL_Hex( iAttacker, iVictim )
 			// The user is hexed - yes
 			p_data_b[iVictim][PB_HEXED] = true;
 			
-			// Update the skills
-			SKILL_Update( iVictim );
-			
 			// Change the skin from this player (1 = to zombie)
 			SHARED_ChangeSkin( iVictim, 1 );
 			
 			// Set up the task that the hexed player jump in a few seconds
-			PLAYER_Jump( TASK_JUMP + iVictim );
+			if ( !is_user_bot( iVictim ) )
+				PLAYER_Jump( TASK_JUMP + iVictim );
 			
 			// Get the two names
 			static VictimName[32], AttackerName[32];
@@ -434,13 +432,13 @@ public SKILL_Bash( iAttacker, iVictim )
 	static Float:iBashChance;
 	
 	// Has this player bash?
-	if ( iSkillLevel && !p_data_b[iVictim][PB_STUNNED] && !p_data_b[iAttacker][PB_HEXED] )
+	if ( iSkillLevel )
 	{
 		// Add the bash chance
 		iBashChance = p_bash[iSkillLevel-1];
 		
 		// The player has skilled intellect, add the bash bonus
-		if ( p_data_attrib[iAttacker][ATTRIB_INTELLECT] == INTELLECT_BASH )
+		if ( p_data_attrib[iAttacker][ATTRIB_INTELLECT] >= INTELLECT_BASH )
 		{
 			iBashChance += INTELLECT_BASH_BONUS;
 		}
@@ -479,16 +477,8 @@ public SKILL_SerpentWard( id )
 	// User should have some!
 	if ( iSkillLevel )
 	{
-
-		// Then we can give the user a serpent ward!
-		while ( g_SerpentGiven[id] < p_serpent[iSkillLevel-1] )
-		{
-			// Increase the available serpent wards
-			p_data[id][P_SERPENTCOUNT]++;
-
-			// Increase the total we have given the user!
-			g_SerpentGiven[id]++;
-		}
+		// Increase the available serpent wards
+		p_data[id][P_SERPENTCOUNT] = p_serpent[iSkillLevel-1];
 	}
 	
 	// User should not have any!
@@ -720,13 +710,13 @@ public SKILL_Banish( iAttacker, iVictim )
 	static Float:iBanishChance;
 	
 	// Has this player banish?
-	if ( iSkillLevel && !p_data_b[iAttacker][PB_HEXED] )
+	if ( iSkillLevel )
 	{
 		// Add the banish chance
 		iBanishChance = p_banish[iSkillLevel-1];
 		
 		// The player has skilled intellect, add the bonus
-		if ( p_data_attrib[iAttacker][ATTRIB_INTELLECT] == INTELLECT_BANISH )
+		if ( p_data_attrib[iAttacker][ATTRIB_INTELLECT] >= INTELLECT_BANISH )
 		{
 			iBanishChance += INTELLECT_BANISH_BONUS;
 		}

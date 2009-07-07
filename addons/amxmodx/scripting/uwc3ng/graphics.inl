@@ -417,6 +417,17 @@ stock Create_TE_Smoke(originSight[3], position[3], iSprite, scale, framerate){
 	write_byte( framerate  )			// framerate
 	message_end()
 }
+
+stock Create_CarrionShadowDOT( id, iSprite ){
+	
+	message_begin( MSG_ALL, SVC_TEMPENTITY )
+         write_byte( TE_PLAYERATTACHMENT )
+         write_byte( id ) 
+         write_coord( 0 )
+         write_short( iSprite )
+         write_short( 25 )
+         message_end()
+}
 /* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
 *{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1031\\ f0\\ fs16 \n\\ par }
 */

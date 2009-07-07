@@ -135,6 +135,8 @@ public HandlePressMenu( id, key )
 	if ( p_data[id][PLAYER_LVL] < Skill_REQLevel[MenuEntry] )
 	{
 		client_print( id, print_chat, "%s You selected an invalid menupoint", MOD_NAME );
+		
+		return;
 	}
 	
 	// Has the player available skillpoints?
@@ -154,10 +156,18 @@ public HandlePressMenu( id, key )
 			return;
 		}
 		
-		// He want to drop Critical Grenade but he has Napalm grenades skilled
+		// He wants to drop Critical Grenade but he has Napalm grenades skilled
 		if ( MenuEntry == SKILL_CRITICALGRENADE && p_data_skill[id][SKILL_NAPALMGRENADE] )
 		{
 			client_print( id, print_chat, "%s You have to drop first %s to drop this skill", MOD_NAME, Skill_Names[SKILL_NAPALMGRENADE] );
+			
+			return;
+		}
+		
+		// He wants to drop Vampiric Aura or Leather Skin but he has Steel Skin
+		if ( ( MenuEntry == SKILL_VAMPIRIC || MenuEntry == SKILL_LSKIN ) && p_data_skill[id][SKILL_STEELSKIN] )
+		{
+			client_print( id, print_chat, "%s You have to drop first %s to drop this skill", MOD_NAME, Skill_Names[SKILL_STEELSKIN] );
 			
 			return;
 		}
@@ -210,6 +220,20 @@ public HandlePressMenu( id, key )
 		return;
 	}
 	
+	// he skilled devotion aura. Give him the extra hp
+	if ( MenuEntry == SKILL_DEVOTION )
+	{
+		// Devotion Aura
+		SKILL_DevotionAura( id );
+	}
+	
+	// Another restrictions for the skills
+	if ( !SKILL_Collide( id, MenuEntry ) )
+	{
+		// player can't skill it because he has another skill 
+		return;
+	}
+	
 	// The skill is an ultimate and the player has reached the maximum of ultimates
 	if ( SKILL_is_ultimate( MenuEntry, false ) && g_iCountUltimates[id] >= MAX_ULTIMATES )
 	{
@@ -220,6 +244,13 @@ public HandlePressMenu( id, key )
 	
 	// Set his new Skill +1
 	p_data_skill[id][MenuEntry]++;
+	
+	// extra check for Serpent Ward 
+	if ( MenuEntry == SKILL_WARD  && !p_data_skill[id][SKILL_WARD] )
+	{
+		// Tell him that he can use this ultimate at the next round
+		client_print ( id, print_chat, "%s You can use Serpent Ward at the next round", MOD_NAME );
+	}
 	
 	// This skill is an ultimate. We count it that he will skill it
 	if ( SKILL_is_ultimate( MenuEntry, false ) && p_data_skill[id][MenuEntry] == Skill_Max_Points[MenuEntry] )
@@ -256,6 +287,18 @@ public HandlePressMenu( id, key )
 	if ( p_data[id][AVAILABLE_SKILL] > 0 )
 	{
 		SKILL_ShowMenu( id, p_data[id][SKILL_SIDE] );
+	}
+	
+	// He has available attribs
+	else if ( p_data[id][AVAILABLE_ATTRIBS] > 0 )
+	{
+		ATTRIB_ShowSelectMenu( id );
+	}
+	
+	// He has available resists
+	else if ( p_data[id][AVAILABLE_RESISTS] > 0 )
+	{
+		RESIST_ShowSelectMenu( id );
 	}
 	
 	// Update his new skills
@@ -295,9 +338,6 @@ public SKILL_Update( id )
 	// Levitation
 	SKILL_Levitation( id );
 	
-	// Devotion Aura
-	SKILL_DevotionAura( id );
-	
 	// Leather Skin & Healing Wave
 	SHARED_HandleTasks( id )
 	
@@ -312,7 +352,7 @@ public SKILL_Update( id )
 public SKILL_Damage( iAttacker, iVictim, iDamage, iHitPlace, iWeapon )
 {
 	// Wtf, the player is away.
-	if ( !is_user_connected( iVictim ) || !is_user_connected( iAttacker ) )
+	if ( !is_user_alive( iVictim ) || !is_user_connected( iAttacker ) )
 	{
 		return;
 	}
@@ -372,17 +412,17 @@ public SKILL_available_points( id )
 	// Calculate the difference
 	iGivenPoints = ( p_data[id][PLAYER_LVL] - iGivenPoints );
 	
-	// Extra check (should never true)
+	// // Check if the player has more skillpoints spent as available
 	if ( iGivenPoints < 0 )
 	{
-		// We set it to zero
-		iGivenPoints = 0;
-		
-		// Something is crappy here. We reset the skills better
+		// We have to reset all skills
 		p_data_b[id][RESET_SKILLS] = true;
 		SKILL_ResetAllNow( id );
-	}
 		
+		// jump out the loop and the function
+		return;
+	}
+			
 	// Save the available skillpoints
 	p_data[id][AVAILABLE_SKILL] = iGivenPoints;
 	
@@ -432,6 +472,157 @@ public SKILL_ResetAllNow( id )
 		// Reset the counter for the ultimates
 		g_iCountUltimates[id] = 0;
 	}
+}
+
+// Check if the skill collides with another skill
+SKILL_Collide( id, iSkill )
+{
+	new bError = false;
+	
+	// Which skill is it?
+	switch ( iSkill )
+	{
+		case SKILL_VENGEANCE: 
+		{ // is it vengeance
+			if ( p_data_skill[id][SKILL_BOMBER] > 0 )
+			{
+				// tell that the client
+				client_print( id, print_chat, "%s You would have to first give up your Suicide Bomber ultimate to train this", MOD_NAME );
+				
+				// Error occured
+				bError = true;
+			}
+		}
+		
+		case SKILL_BOMBER:
+		{ // is it suicide bomber
+			if ( p_data_skill[id][SKILL_VENGEANCE] > 0 )
+			{
+				// tell that the client
+				client_print( id, print_chat, "%s You would have to first give up your Vegeance ultimate to train this", MOD_NAME );
+				
+				// Error occured
+				bError = true;
+			}
+		}
+		
+		case SKILL_THORNSAURA:
+		{ // is it thornsaura
+			if ( p_data_skill[id][SKILL_SPIKED] > 0 )
+			{
+				// tell that the client
+				client_print( id, print_chat, "%s Only one damage shield skill is allowed, you would have to give up your Spiked Carapace", MOD_NAME );
+				
+				// Error occured
+				bError = true;
+			}
+		}
+		
+		case SKILL_SPIKED:
+		{ // is it spiked carapace
+			if ( p_data_skill[id][SKILL_THORNSAURA] > 0 )
+			{
+				// tell that the client
+				client_print( id, print_chat, "%s Only one damage shield skill is allowed, you would have to give up your Thorns Aura", MOD_NAME );
+				
+				// Error occured
+				bError = true;
+			}
+		}
+		
+		case SKILL_MANA:
+		{ // is it siphon mana
+			if ( p_data_skill[id][SKILL_SIPHONARMOR] > 0 )
+			{
+				// tell that the client
+				client_print( id, print_chat, "%s You would have to first give up your Siphon Armor skill to train this", MOD_NAME );
+				
+				// Error occured
+				bError = true;
+			}
+		}
+		
+		case SKILL_SIPHONARMOR:
+		{ // is it siphon armor
+			if ( p_data_skill[id][SKILL_MANA] > 0 )
+			{
+				// tell that the client
+				client_print( id, print_chat, "%s You would have to first give up your Siphon Mana skill to train this", MOD_NAME );
+				
+				// Error occured
+				bError = true;
+			}
+		}
+		
+		case SKILL_SHADOWSTRIKE:
+		{ // is it shadow strike
+			if ( p_data_skill[id][SKILL_CARRIONBEETLES] > 0 )
+			{
+				// tell that the client
+				client_print( id, print_chat, "%s You would have to first give up your Carrion Beetles skill to train this", MOD_NAME );
+				
+				// Error occured
+				bError = true;
+			}
+		}
+		
+		case SKILL_CARRIONBEETLES:
+		{ // is it carrion beetles
+			if ( p_data_skill[id][SKILL_SHADOWSTRIKE] > 0 )
+			{
+				// tell that the client
+				client_print( id, print_chat, "%s You would have to first give up your Shadow Strike skill to train this", MOD_NAME );
+				
+				// Error occured
+				bError = true;
+			}
+		}
+		
+		case SKILL_CRITICAL:
+		{ // is it critical strike
+			if ( p_data_skill[id][SKILL_TRUESHOTAURA] > 0 )
+			{
+				// tell that the client
+				client_print( id, print_chat, "%s You would have to first give up your Trueshot Aura skill to train this", MOD_NAME );
+				
+				// Error occured
+				bError = true;
+			}
+		}
+		
+		case SKILL_TRUESHOTAURA:
+		{ // is it trueshot aura
+			if ( p_data_skill[id][SKILL_CRITICAL] > 0 )
+			{
+				// tell that the client
+				client_print( id, print_chat, "%s You would have to first give up your Critical Strike skill to train this", MOD_NAME );
+				
+				// Error occured
+				bError = true;
+			}
+		}
+		
+		case SKILL_STEELSKIN:
+		{ // is it steel skin
+			if ( p_data_skill[id][SKILL_VAMPIRIC] < 1 || p_data_skill[id][SKILL_LSKIN] < 3 )
+			{
+				// tell that the client
+				client_print( id, print_chat, "%s You must be trained in 1 level of Vampiric Aura and 3 levels of Leather Skin to train this skill", MOD_NAME );
+				
+				// Error occured
+				bError = true;
+			}
+		}
+	}
+	
+	// Error occured?
+	if ( bError )
+	{
+		return false;
+	}
+	
+	// All okay
+	return true;
 }
 	
 	

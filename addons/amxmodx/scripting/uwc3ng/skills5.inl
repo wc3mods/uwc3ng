@@ -9,14 +9,6 @@ public SKILL_Vengeance( id, iAttacker )
 		return;
 	}
 	
-	// The player is hexed
-	else if ( p_data_b[id][PB_HEXED] )
-	{
-		UWC3NG_StatusText( id, 0, "Vengeance Failed^nYou are hexed" );
-		
-		return;
-	}
-	
 	// The enemy can block this 
 	else if ( ULTIMATE_IsImmun( iAttacker ) )
 	{
@@ -33,7 +25,7 @@ public SKILL_Vengeance( id, iAttacker )
 		if ( !g_EndRound && SHARED_IsOnTeam( id ) )
 		{
 			// The player has intellect, give him the bonus
-			if ( p_data_attrib[id][ATTRIB_INTELLECT] == INTELLECT_VENGEANCE && !p_data_b[id][PB_RESPAWNED_TWICE] && p_data_b[id][PB_RESPAWNED] )
+			if ( p_data_attrib[id][ATTRIB_INTELLECT] >= INTELLECT_VENGEANCE && !p_data_b[id][PB_RESPAWNED_TWICE] && p_data_b[id][PB_RESPAWNED] )
 			{
 				p_data_b[id][PB_RESPAWNED] = false;
 				p_data_b[id][PB_RESPAWNED_TWICE] = true;
@@ -352,6 +344,7 @@ public _SKILL_EntangleWait( parm[4] )
 
 		set_task( 0.1, "_SKILL_EntangleWait", TASK_ENTANGLEWAIT + id, parm, 4 );
 	}
+	
 	return;
 }
 
@@ -501,6 +494,13 @@ public SKILL_FlameStrike_DoT( parm_DoT[3] )
 	new iTarget = parm_DoT[1];
 	new iCounter = parm_DoT[2];
 	
+	// Check if all players are on the server or alive
+	if ( !is_user_connected( iCaster ) || !is_user_alive( iTarget ) )
+	{
+		p_data_b[iTarget][PB_ISBURNING] = true;
+		return PLUGIN_HANDLED;
+	}
+	
 	// Stop DoT if the max number of ticks is reached
 
 	if ( iCounter > IMMOLATE_DOT ) 
@@ -601,12 +601,6 @@ public SKILL_Suicide( id )
 		return;
 	}
 	
-	// The player is hexed
-	if ( p_data_b[id][PB_HEXED] )
-	{
-		return;
-	}
-	
 	// Ultimate used 
 	p_data_b[id][PB_USED_SUICIDE] = true;
 
@@ -683,7 +677,7 @@ public _SKILL_SuicideExplode( parm[5] )
 		// Make sure this user is close enough to do damage + isn't immune + isn't on the same team + isn't already immune to all damage
 		if ( iDistance < EXPLOSION_RANGE && iTeam != get_user_team( iTargetID ) && !bIgnoreDmg[iTargetID] )
 		{
-			if ( ULTIMATE_IsImmun( iTargetID ) )
+			if ( ULTIMATE_IsImmun( iTargetID ) || p_data_b[iTargetID][PLAYER_SPAWNGOD] || p_data_b[iTargetID][PB_GOD] )
 			{
 				ULTIMATE_Blocked( id );
 				
@@ -762,7 +756,7 @@ public SKILL_Evasion( id, iHitZone )
 	// Check to see if they should evade this shot?
 	iSkillLevel = p_data_skill[id][SKILL_EVASION];
 
-	if ( !p_data_b[id][PB_HEXED] && iSkillLevel > 0 ) 
+	if ( iSkillLevel > 0 ) 
 	{
 		// Add the evasion chance
 		iEvasionChance = p_evasion[iSkillLevel-1];
@@ -778,13 +772,13 @@ public SKILL_Evasion( id, iHitZone )
 			new iGlowIntensity = random_num( 20, 50 );
 		
 			// Head shot
-			if ( iHitZone & (1 << HITGROUP_HEAD) )
+			if ( iHitZone == HIT_HEAD )
 			{
 				iGlowIntensity += 250;
 			}
 
 			// Chest
-			else if ( iHitZone & (1 << HITGROUP_CHEST) )
+			else if ( iHitZone == HIT_CHEST )
 			{
 				iGlowIntensity += 75;
 			}
@@ -814,7 +808,7 @@ public SKILL_TrueShotAura( iAttacker, iVictim, iWeapon, iDamage, iHitPlace )
 		iTrueshotBonus = p_trueshot[iSkillLevel-1];
 		
 		// The player has intellect skilled, add the bonus
-		if ( p_data_attrib[iAttacker][ATTRIB_INTELLECT] == INTELLECT_TRUESHOT )
+		if ( p_data_attrib[iAttacker][ATTRIB_INTELLECT] >= INTELLECT_TRUESHOT )
 		{
 			iTrueshotBonus += INTELLECT_TRUESHOT_BONUS;
 		}

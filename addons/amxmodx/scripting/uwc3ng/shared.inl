@@ -19,21 +19,23 @@ public SHARED_HandleTasks( id )
 		}
 	}
 	
+	// Here we save the time for the task
+	new Float:iHealTime = 0.0;
+	
 	// Set up the first task for healing wave
-	if ( iLevelWave && iLevelConst )
+	if ( iLevelWave )
 	{
-		if ( !task_exists( id + TASK_WAVE ) )
-		{
-			new Float:iHealTime = p_heal[iLevelWave-1];
-			
-			// The player has skilled constitution
-			if ( iLevelConst )
-			{
-				iHealTime += 0.1 * float( iLevelConst );
-			}
-			
-			set_task( iHealTime, "SKILL_HealingWave", id + TASK_WAVE );
-		}
+		iHealTime = p_heal[iLevelWave-1];
+	}
+	
+	else if ( iLevelConst )
+	{
+		iHealTime = p_heal[0];
+	}
+	
+	if ( !task_exists( id + TASK_WAVE ) && iHealTime )
+	{
+		set_task( iHealTime, "SKILL_HealingWave", id + TASK_WAVE );
 	}
 	
 	return;
@@ -800,7 +802,7 @@ public _SHARED_Spawn( id )
 	{
 		return;
 	}
-
+	
 	id -= TASK_SPAWN;
 	
 	// User is no longer connected or is not on a team
@@ -808,12 +810,19 @@ public _SHARED_Spawn( id )
 	{
 		return;
 	}
-
+	
 	// Round has ended, lets give money back if they bought a scroll
 	if ( g_EndRound )
 	{
 		if ( ITEM_Has( id, ITEM_SCROLL ) > ITEM_NONE )
 		{
+			// Remove the Scroll
+			if ( g_iShopMenuItems[id][ITEM_SLOT_ONE] == ITEM_SCROLL )
+				g_iShopMenuItems[id][ITEM_SLOT_ONE] = ITEM_NONE;
+			else if ( g_iShopMenuItems[id][ITEM_SLOT_TWO] == ITEM_SCROLL )
+				g_iShopMenuItems[id][ITEM_SLOT_TWO] = ITEM_NONE;
+			
+			// The player should know why
 			client_print( id, print_chat, "%s Unable to respawn because the round is over, here is your money back", MOD_NAME );
 
 			SHARED_SetUserMoney( id, ITEM_Cost( id, ITEM_SCROLL ) );
@@ -833,7 +842,7 @@ public _SHARED_Spawn( id )
 
 	// Give the user godmode for a little
 	set_user_godmode( id, 1 );
-	p_data_b[id][PB_GOD] = true;
+	p_data_b[id][PLAYER_SPAWNGOD] = true;
 
 	// Save their previous weapons!
 	SHARED_CopySavedWeapons( id );
@@ -845,9 +854,7 @@ public _SHARED_Spawn( id )
 	p_data_b[id][IGNOR_SPAWN] = true;
 
 	// Spawn the player
-	set_pev(id, pev_spawnflags, 3);
-	dllfunc(DLLFunc_Spawn, id);
-	set_pev(id, pev_iuser1, 0);
+	ExecuteHamB( Ham_CS_RoundRespawn , id );
 
 	// Reset the user's skin to normal
 	SHARED_ChangeSkin( id, 0 );
@@ -857,7 +864,7 @@ public _SHARED_Spawn( id )
 
 	set_task( 0.2, "_SHARED_Spawn_Final", TASK_SPAWNPLAYER + id );
 	set_task( 0.4, "SHARED_Give_Player_Weapons", TASK_GIVEITEMS + id );
-	set_task( 1.0, "_SHARED_SpawnRemoveGod", TASK_SPAWNREMOVEGOD + id );
+	set_task( SPAWN_PROTECTION, "_SHARED_SpawnRemoveGod", TASK_SPAWNREMOVEGOD + id );
 
 	return;
 }
@@ -872,14 +879,14 @@ public _SHARED_SpawnRemoveGod( id )
 		// Remove the godmode
 		set_user_godmode( id, 0 );
 		
+		// Now call all spawn things
+		on_PlayerSpawn( id );
+		
 		// Yes, remove!
-		p_data_b[id][PB_GOD] = false;
+		p_data_b[id][PLAYER_SPAWNGOD] = false;
 		
 		// Remove ignor spawn
 		p_data_b[id][IGNOR_SPAWN] = false;
-		
-		// Now call all spawn things
-		on_PlayerSpawn( id );
 	}
 	
 	return;
@@ -895,10 +902,6 @@ public _SHARED_Spawn_Final( id )
 		return;
 	}
 
-	set_pev(id, pev_spawnflags, 3);
-	dllfunc(DLLFunc_Spawn, id);
-	set_pev(id, pev_iuser1, 0);
-	
 	bIgnoreArmorSet[id] = false;
 
 	// If we don't give them a suit then they won't have a HUD

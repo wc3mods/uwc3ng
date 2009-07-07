@@ -35,6 +35,8 @@
 #define TASK_GETXP 934
 #define TASK_DRAW 967
 #define TASK_SPAWNPLAYER 1000
+#define TASK_CARRIONDOT 1033
+#define TASK_SHADOWDOT 1066
 
 // -------------------------------------- General --------------------------------------
 // General define's
@@ -47,7 +49,6 @@
 // Save defines
 #define DB_MYSQLX 0
 #define DB_SQLITE 1
-#define NVAULT 2
 
 // Maximum is all
 #define MAX_PLAYERS 33
@@ -86,8 +87,8 @@
 #define AVAILABLE_RESISTS 16
 
 // Player bool data array defines (user for p_data_b var)
-#define MAX_DATA_B 35
-#define PLAYER_LOADDATA 0
+#define MAX_DATA_B 39
+#define PLAYER_SPAWNGOD 0
 #define PLAYER_DEFORPLAN 1
 #define SKILL_DROP 2
 #define PB_HEXED 3
@@ -122,6 +123,11 @@
 #define USED_GATE_TWICE 32
 #define PB_RESPAWNED_TWICE 33
 #define RESET_RESISTS 34
+#define PB_NORMALSPEED 35
+#define RESIST_FILLRESIST 36
+#define PB_CARRIONDOT 37
+#define PB_SHADOWDOT 38
+
 
 // How we save the data
 #define SAVEBY_STEAMID 0
@@ -132,9 +138,6 @@
 #define SQLITE_SYNC_OFF	0
 #define SQLITE_SYNC_NORMAL 1
 #define SQLITE_SYNC_FULL 2
-
-// Nvault file
-#define NVAULT_FILE "uwc3ng"
 
 // Glow
 #define MAXGLOW	150
@@ -154,8 +157,9 @@
 #define YPOS 1
 #define ZPOS 2
 
-// Spawn delay
+// Spawn delay / Spawn protection
 #define SPAWN_DELAY 0.2
+#define SPAWN_PROTECTION 3.0
 
 // Used for spectating info
 #define SPEC_HOLDTIME 10.0
@@ -210,13 +214,13 @@
 // Some skill defines
 #define LEVITATION_FOR_SKILL 44
 #define HEALING_WAVE_RANGE 750
+#define HEALING_WAVE_HEAL 3
 #define LEATHER_SKIN_RANGE 750
 #define REPAIR_DIVISOR 5
 #define MEND_DIVISOR 5
 #define DISPELL_DIVISOR 5
 #define REPAIR_BONUS 1.4
 #define MEND_BONUS 1.4
-#define HEX_SPEED 175.0
 #define HEXED_JUMP_TIME 3.0
 #define BASH_GLOW_INTENSITY 100
 #define BASH_HOLD_TIME 0.7
@@ -224,7 +228,10 @@
 #define TELEPORT_RADIUS 50
 #define BLINK_COOLDOWN 2.0
 #define SHADOWSTRIKE_DAMAGE 15
+#define SHADOWSTRIKE_DOT 5
+#define DOT_TASKTIME 3.0
 #define CARRIONBEETLE_DAMAGE 15
+#define CARRIONBEETLE_DOT 3
 #define IMMUNITY_RADIUS	500
 #define BIGBADVOODOO_DURATION 2
 #define NAPALM_MULTI 3
@@ -338,7 +345,7 @@
 #define SOUND_REPAIR 23
 
 // Sprites
-#define MAX_SPRITES 18
+#define MAX_SPRITES 20
 
 #define SPRITE_REPAIR 0
 #define SPRITE_MEND 1
@@ -358,6 +365,8 @@
 #define SPRITE_FIREBALL 15
 #define SPRITE_SMOKE 16
 #define SPRITE_FIRE 17
+#define SPRITE_CARRIONBEETLES 18
+#define SPRITE_SHADOWSTRIKEDOT 19
 
 // -------------------------------------- Weapons --------------------------------------
 #define CSW_WORLDSPAWN 0 
@@ -457,7 +466,7 @@
 #define INTELLECT_BANISH 13
 #define INTELLECT_BANISH_BONUS 0.10
 #define INTELLECT_HEX 14
-#define INTELLECT_HEX_BONUS 0.10
+#define INTELLECT_HEX_BONUS 0.05
 #define INTELLECT_BASH 15
 #define INTELLECT_BASH_BONUS 0.10
 #define INTELLECT_TRUESHOT 16
@@ -613,7 +622,7 @@ new const Float:p_lskin[10] = { 6.0, 5.5, 5.0, 4.5, 4.0, 3.5, 3.0, 2.5, 2.0, 1.5
 new const Float:p_vampiric[10] = { 0.10, 0.12, 0.14, 0.16, 0.18, 0.21, 0.24, 0.27, 0.30, 0.34 }; // Vampiric Aura
 new const Float:p_spiked[10] = { 0.06, 0.08, 0.10, 0.12, 0.15, 0.18, 0.21, 0.24, 0.27, 0.31 }; // Spiked Carapace
 new const Float:p_unholy[10] = { 260.0, 265.0, 270.0, 275.0, 282.5, 290.0, 297.5, 305.0, 315.0, 325.0 }; // Unholy Aura
-new const Float:p_hex[10] = { 0.04, 0.06, 0.08, 0.10, 0.13, 0.16, 0.19, 0.21, 0.24, 0.28 }; // Hex
+new const Float:p_hex[10] = { 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.22 }; // Hex
 new const Float:p_bash[10] = { 0.04, 0.06, 0.08, 0.10, 0.13, 0.16, 0.19, 0.21, 0.24, 0.28 }; // Bash
 new const p_serpent[3] = { 1, 2, 3 }; // Serpent Ward
 new const Float:p_banish[10] = { 0.04, 0.06, 0.08, 0.10, 0.13, 0.16, 0.19, 0.21, 0.24, 0.28 }; // Banish

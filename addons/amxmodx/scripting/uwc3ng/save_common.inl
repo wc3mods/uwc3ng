@@ -13,7 +13,6 @@ public DetermineType()
 		if ( !module_exists( "sqlx" ) )
 		{
 			log_amx( "[WARNING] Unable to saving using MySQL, please enable the mysql module" );
-			log_amx( "[WARNING] Saving (possibly) will be done by using SQLite" );
 		}
 
 		// OK we can save!
@@ -35,7 +34,6 @@ public DetermineType()
 		if ( !module_exists( "sqlx" ) )
 		{
 			log_amx( "[WARNING] Unable to saving using SQLite, please enable the sqlite module" );
-			log_amx( "[WARNING] Saving (possibly) will be done by using Nvault" );
 		}
 		
 		// OK we can save
@@ -49,35 +47,18 @@ public DetermineType()
 		}
 	}
 	
-	// We can't save with MySQLX and SQLite. So we try it with Nvault 
-	if ( g_SaveType == -1 )
-	{
-		// We can't save with nvault
-		if ( !module_exists( "nvault" ) )
-		{
-			log_amx( "[WARNING] Unable to saving using Nvault, please enable the nvault module" );
-		}
-		
-		// Ok we can
-		else
-		{
-			// We're using nvault
-			g_SaveType = NVAULT;
-		}
-	}
-	
 	// Well. Something is really wrong. We can't save xp
 	if ( g_SaveType == -1 )
 	{
 		set_pcvar_num( CVAR_uwc3ng_savexp, 0 );
 
-		log_amx( "[ERROR] Unable to save XP, please enable SQLite, MySQL X  or Nvault (mysql requires additional configuration)" );
+		log_amx( "[ERROR] Unable to save XP, please enable SQLite or MySQL X (mysql requires additional configuration)" );
 	}
 	
 	return;
 }
 
-// Here we start the connections to the dbs or the nvault file
+// Here we start the connections to the dbs 
 public Save_Init()
 {
 	// Then we don't want to save XP
@@ -92,18 +73,17 @@ public Save_Init()
 		DetermineType();
 	}	
 
-	// Initiate our database or nvault file
+	// Initiate our database 
 	switch( g_SaveType )
 	{
 		case DB_MYSQLX:	MYSQLX_Init();
 		case DB_SQLITE:	SQLITE_Init();
-		case NVAULT: NVAULT_Init();
 	}
 
 	return;
 }
 
-// Close the database connection(s) or nvault connection
+// Close the database connection(s) 
 public Save_Close()
 {
 	// Close our connections
@@ -111,7 +91,6 @@ public Save_Close()
 	{
 		case DB_MYSQLX:	MYSQLX_Close();
 		case DB_SQLITE:	SQLITE_Close();
-		case NVAULT: NVAULT_CloseNow();
 	}
 
 	return;
@@ -136,6 +115,12 @@ public Player_SaveXP( id, bool:threaded )
 		return;
 	}
 	
+	// He has no xp, we don't save
+	if ( p_data[id][PLAYER_XP] <= 0 )
+	{
+		return;
+	}
+	
 	// Save the xps from the player
 	if ( threaded )
 	{
@@ -143,7 +128,6 @@ public Player_SaveXP( id, bool:threaded )
 		{
 			case DB_MYSQLX:	MYSQLX_Save_T( id );
 			case DB_SQLITE:	SQLITE_Save( id );
-			case NVAULT: NVAULT_Save( id );
 		}
 	}
 	
@@ -154,7 +138,6 @@ public Player_SaveXP( id, bool:threaded )
 		{
 			case DB_MYSQLX: MYSQLX_Save( id );
 			case DB_SQLITE:	SQLITE_Save( id );
-			case NVAULT: NVAULT_Save( id );
 		}
 	}
 	
@@ -229,19 +212,16 @@ public Player_GetAllXP( id )
 	{
 		return;
 	}
-		
-	log_amx( "Bot ID: %d", id );
 	
 	// Get the XP	
 	switch( g_SaveType )
 	{
 		case DB_MYSQLX:	MYSQLX_GetAllXP( id );
 		case DB_SQLITE:	SQLITE_GetAllXP( id );
-		case NVAULT: NVAULT_GetAllXP( id );
 	}
 	
-	// Detect and set the startlevel
-	PLAYER_set_startlevel( id )
+	// Detect the startlevel of each player
+	PLAYER_set_startlevel( id );
 	
 	// Calculate the Level
 	XP_CalcLevel( id );
@@ -258,7 +238,7 @@ public Player_GetAllXP( id )
 	return;
 }
 
-// Prepares text for database or nvault insertion
+// Prepares text for database 
 public Save_FormatString( text[], len )
 {
 	replace_all( text, len, "'", "\'" );
@@ -276,13 +256,15 @@ public Save_FetchUniqueID( id )
 	{
 		return;
 	}
+	
+	// Reset the old data
+	PLAYER_ResetData( id );
 
 	// we read or create the UniqueID
 	switch( g_SaveType )
 	{
 		case DB_MYSQLX:	MYSQLX_FetchUniqueID( id );
 		case DB_SQLITE:	SQLITE_FetchUniqueID( id );
-		case NVAULT: return;
 	}
 	
 	// Nothing was found - try again in a bit
@@ -301,6 +283,16 @@ public Save_FetchUniqueID( id )
 	}
 
 	return;
+}
+
+public SAVE_GetUniqueID( id )
+{
+	if ( p_data[id][PLAYER_UNIQUEID] <= 0 )
+	{
+		Save_FetchUniqueID( id );
+	}
+	
+	return p_data[id][PLAYER_UNIQUEID];
 }
 /* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
 *{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1031\\ f0\\ fs16 \n\\ par }

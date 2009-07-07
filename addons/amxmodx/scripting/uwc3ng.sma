@@ -3,6 +3,7 @@
 *
 *  by DA
 *  http://www.wc3mods.net
+*  http://www.fun-arena.com
 *
 *  This program is free software; you can redistribute it and/or modify it
 *  under the terms of the GNU General Public License as published by the
@@ -37,13 +38,12 @@
 #include <cstrike>
 #include <dbi>
 #include <sqlx>
-#include <nvault>
 #include <fun>
 #include <fakemeta>
 #include <engine>
 #include <csx>
 
-#define VERSION "1.4"
+#define VERSION "2.35.4"
 
 // --- Main includes ---
 #include "uwc3ng/constants.inl"		// Load the constants include file
@@ -53,7 +53,6 @@
 #include "uwc3ng/cvars.inl" 		// Load the cvars include file
 #include "uwc3ng/mysql.inl"		// Load the mysqlx include file
 #include "uwc3ng/sqlite.inl"		// Load the sqlite include file
-#include "uwc3ng/nvault.inl"		// Load the nvault include file
 #include "uwc3ng/XP.inl"		// Load the xp include file
 #include "uwc3ng/graphics.inl"		// Load the graphics file
 #include "uwc3ng/events.inl"		// Load the events file
@@ -108,6 +107,7 @@ public plugin_init()
 	
 	// hmm, a sandwich!
 	RegisterHam ( Ham_Spawn, "player", "on_PlayerSpawn", 1 );
+	RegisterHam ( Ham_TraceAttack, "player", "ham_TraceAttack" );
 	
 	// From wc3ft
 	gmsgStatusText = get_user_msgid( "StatusText" );
@@ -131,6 +131,7 @@ public plugin_init()
 	register_menu ( "Skillsmenu", 1023, "MENU_HandleSkills" );
 	register_menu ( "Itemsmenu", 1023, "MENU_HandleItems" );
 	register_menu ( "Helpmenu", 1023, "MENU_HandleHelp" );
+	register_menu ( "ResetSkillmenu", 1023, "MENU_HandleResetSkills" );
 		
 	// Load the cvars
 	Load_Cvars();
@@ -244,6 +245,8 @@ public plugin_precache()
 	copy( g_szSprites[SPRITE_FIREBALL], 63, "sprites/zerogxplode.spr" );
 	copy( g_szSprites[SPRITE_SMOKE], 63, "sprites/steam1.spr" );
 	copy( g_szSprites[SPRITE_FIRE], 63, "sprites/explode1.spr" );
+	copy( g_szSprites[SPRITE_CARRIONBEETLES], 63, "sprites/uwc3ng/bm7.spr" );
+	copy( g_szSprites[SPRITE_SHADOWSTRIKEDOT], 63, "sprites/uwc3ng/poison1.spr" );
 		
 	// Now lets make sure the sprites exist
 	for ( i = 0; i < MAX_SPRITES; i++ )
@@ -325,14 +328,11 @@ public client_putinserver( id )
 		query_client_cvar( id, "cl_minmodels", "_UTIL_CheckMinModelsValue" );
 	}
 	
-	// Reset the old data
-	PLAYER_ResetData( id );
-	
-	// Set all attribs to startpoints
-	static i;
-	for ( i = 0; i < MAX_ATTRIBS; ++i )
+	// The user is connected. Reset the old data
+	if ( !get_pcvar_num( CVAR_uwc3ng_save_xp ) )
 	{
-		p_data_attrib[id][i] = MAX_ATTRIBS_STARTPOINTS;
+		// Reset the old data
+		PLAYER_ResetData( id );
 	}
 	
 	// The player is a bot. We give him a startlevel if this defined
@@ -350,7 +350,7 @@ public client_putinserver( id )
 		}
 	}
 	
-	// Detect the startlevle of each player
+	// Detect the startlevel of each player
 	PLAYER_set_startlevel( id );
 		
 	// Get the user's ID!
@@ -367,7 +367,7 @@ public client_putinserver( id )
 	{
 		set_task( 1.0, "Player_GetAllXP", id + TASK_GETXP );
 	}
-
+	
 	return;
 }
 
@@ -485,7 +485,7 @@ public plugin_natives()
 public module_filter( const module[] )
 {
 	// We don't need to display a message, we'll display it later if we need to (when the DB is set up if XP Saving is on)
-	if ( equal( module, "dbi" ) || equal( module, "sqlx" ) || equal( module, "nvault" ) )
+	if ( equal( module, "dbi" ) || equal( module, "sqlx" ) )
 	{
 		return PLUGIN_HANDLED;
 	}

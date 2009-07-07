@@ -499,11 +499,7 @@ public COMMAND_DeleteXP( id )
 		return PLUGIN_CONTINUE;
 	}
 	
-	// Reset all xps 
-	p_data[id][PLAYER_XP] = 0;
-	
-	// Check the level etcetc
-	XP_CheckLevel( id );
+	MENU_ResetSkills( id );
 	
 	return PLUGIN_HANDLED;
 }
@@ -531,7 +527,16 @@ public COMMAND_SaveXP( id )
 		return PLUGIN_CONTINUE;
 	}
 	
-	client_print( id, print_chat, "%s XPs will be automaticle saved", MOD_NAME );
+	// Check if we can save the xp
+	if ( get_pcvar_num( CVAR_uwc3ng_savexp ) )
+	{
+		client_print( id, print_chat, "%s Data is automatically saved", MOD_NAME );
+	}
+	
+	else
+	{
+		client_print( id, print_chat, "%s SaveXP isn't enabled. Your XP will not automatically saved", MOD_NAME );
+	}
 	
 	return PLUGIN_HANDLED;
 }

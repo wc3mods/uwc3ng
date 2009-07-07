@@ -28,7 +28,7 @@ public bool:ULTIMATE_CheckExecute( id, SkillID )
 	else if ( p_data_b[id][USED_GATE] == true && SkillID == SKILL_GATE )
 	{
 		// The player hasn't skilled intellect, he can't gate twice
-		if ( p_data_attrib[id][ATTRIB_INTELLECT] != INTELLECT_GATE || p_data_b[id][USED_GATE_TWICE] )
+		if ( p_data_attrib[id][ATTRIB_INTELLECT] < INTELLECT_GATE || p_data_b[id][USED_GATE_TWICE] )
 		{
 			client_print( id, print_chat, "%s You have already used gate in this round", MOD_NAME );
 		
@@ -40,7 +40,7 @@ public bool:ULTIMATE_CheckExecute( id, SkillID )
 	}
 	
 	// The ultimate delay isn't over
-	if ( g_PlayerUltimateDelay[id] > 0 && SkillID != SKILL_REPAIR && SkillID != SKILL_MEND && SkillID != SKILL_DISPELLHEX && SkillID != SKILL_GATE )
+	if ( g_PlayerUltimateDelay[id] > 0 && SkillID != SKILL_REPAIR && SkillID != SKILL_MEND && SkillID != SKILL_DISPELLHEX && SkillID != SKILL_GATE && SkillID != SKILL_WARD )
 	{
 		static DisplayText[256];
 		formatex ( DisplayText, charsmax( DisplayText ), "Ultimates not ready.^n(%d seconds remaining)", g_PlayerUltimateDelay[id] );
@@ -61,14 +61,6 @@ public bool:ULTIMATE_CheckExecute( id, SkillID )
 	if ( !p_data_skill[id][SkillID] )
 	{
 		UWC3NG_StatusText( id, TXT_ULTIMATE, "Ultimate not found." );
-		
-		return false;
-	}
-	
-	// Player is hexed
-	if ( p_data_b[id][PB_HEXED] )
-	{
-		UWC3NG_StatusText( id, 0, "You may not use this ability while you are hexed" );
 		
 		return false;
 	}
@@ -158,9 +150,7 @@ public ULTIMATE_RemoveCharge( id )
 	{
 		ITEM_RemoveCharge( id, ITEM_NECKLACE );
 	}
-	else if ( p_data_b[id][PB_BLINK] )
-	{}
-	
+		
 	client_print( id, print_chat, "%s You have blocked an enemy's ultimate!", MOD_NAME );
 
 	// Play ultimate blocked sound

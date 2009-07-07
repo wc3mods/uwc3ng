@@ -191,10 +191,17 @@ public SQLITE_Save( id )
 	{
 		return;
 	}
+	
+	// Get the UniqueID
+	new iUniqueID = SAVE_GetUniqueID( id );
+	
+	new szKey[66], szKeyName[32];
+	Save_GetKey( id, szKey, charsmax( szKey ) );
+	Save_GetKeyName( szKeyName, charsmax( szKeyName ) );
 
 	// Save the user's XP!
 	new szQuery[512];
-	format( szQuery, charsmax( szQuery ), "UPDATE `uwc3ng_player` SET `player_xp`='%d' WHERE `player_id`='%d'", p_data[id][PLAYER_XP], p_data[id][PLAYER_UNIQUEID] );
+	formatex( szQuery, charsmax( szQuery ), "REPLACE INTO `uwc3ng_player` ( `player_id` , `%s` , `player_xp` ) VALUES ( '%d', '%s', '%d');", szKeyName, iUniqueID, szKey, p_data[id][PLAYER_XP] );
 	new Handle:query = SQL_PrepareQuery( g_DBConn, szQuery );
 
 	if ( !SQL_Execute( query ) )
@@ -207,54 +214,42 @@ public SQLITE_Save( id )
 	// Now we need to save the skill levels!
 	for ( new iSkillID = 0; iSkillID < MAX_SKILLS; iSkillID++ )
 	{
-		// Then we need to save this!
-		if ( p_data_skill[id][iSkillID] != 0 )
+		formatex( szQuery, 511, "REPLACE INTO `uwc3ng_skill` ( `player_id` , `skill_id` , `skill_level` ) VALUES ( '%d', '%d', '%d' );", iUniqueID, iSkillID, p_data_skill[id][iSkillID] );
+		query = SQL_PrepareQuery( g_DBConn, szQuery );
+
+		if ( !SQL_Execute( query ) )
 		{
-			format( szQuery, 511, "REPLACE INTO `uwc3ng_skill` ( `player_id` , `skill_id` , `skill_level` ) VALUES ( '%d', '%d', '%d' );", p_data[id][PLAYER_UNIQUEID], iSkillID, p_data_skill[id][iSkillID] );
-			query = SQL_PrepareQuery( g_DBConn, szQuery );
+			SQLITE_Error( query, szQuery, 7 );
 
-			if ( !SQL_Execute( query ) )
-			{
-				SQLITE_Error( query, szQuery, 7 );
-
-				return;
-			}
+			return;
 		}
 	}
 	
 	// Now we need to save the attrib levels!
 	for ( new iAttribID = 0; iAttribID < MAX_ATTRIBS; iAttribID++ )
 	{
-		// Then we need to save this!
-		if ( p_data_skill[id][iAttribID] != MAX_ATTRIBS_STARTPOINTS )
+		formatex( szQuery, 511, "REPLACE INTO `uwc3ng_attrib` ( `player_id` , `attrib_id` , `attrib_level` ) VALUES ( '%d', '%d', '%d' );", iUniqueID, iAttribID, p_data_attrib[id][iAttribID] );
+		query = SQL_PrepareQuery( g_DBConn, szQuery );
+
+		if ( !SQL_Execute( query ) )
 		{
-			format( szQuery, 511, "REPLACE INTO `uwc3ng_attrib` ( `player_id` , `attrib_id` , `attrib_level` ) VALUES ( '%d', '%d', '%d' );", p_data[id][PLAYER_UNIQUEID], iAttribID, p_data_attrib[id][iAttribID] );
-			query = SQL_PrepareQuery( g_DBConn, szQuery );
+			SQLITE_Error( query, szQuery, 7 );
 
-			if ( !SQL_Execute( query ) )
-			{
-				SQLITE_Error( query, szQuery, 7 );
-
-				return;
-			}
+			return;
 		}
 	}
 	
 	// Now we need to save the resist levels!
 	for ( new iResistID = 0; iResistID < MAX_RESIST; iResistID++ )
 	{
-		// Then we need to save this!
-		if ( p_data_skill[id][iResistID] != 0 )
+		formatex( szQuery, 511, "REPLACE INTO `uwc3ng_resist` ( `player_id` , `resist_id` , `resist_level` ) VALUES ( '%d', '%d', '%d' );", iUniqueID, iResistID, p_data_resist[id][iResistID] );
+		query = SQL_PrepareQuery( g_DBConn, szQuery );
+
+		if ( !SQL_Execute( query ) )
 		{
-			format( szQuery, 511, "REPLACE INTO `uwc3ng_resist` ( `player_id` , `resist_id` , `resist_level` ) VALUES ( '%d', '%d', '%d' );", p_data[id][PLAYER_UNIQUEID], iResistID, p_data_resist[id][iResistID] );
-			query = SQL_PrepareQuery( g_DBConn, szQuery );
+			SQLITE_Error( query, szQuery, 7 );
 
-			if ( !SQL_Execute( query ) )
-			{
-				SQLITE_Error( query, szQuery, 7 );
-
-				return;
-			}
+			return;
 		}
 	}
 	
@@ -272,7 +267,7 @@ public SQLITE_GetAllXP( id )
 	// Then we have a problem and cannot retreive the user's XP
 	if ( p_data[id][PLAYER_UNIQUEID] <= 0 )
 	{
-		client_print( id, print_chat, "%s Unable to retreive your XP from the database, please attempt to changerace later", MOD_NAME );
+		client_print( id, print_chat, "%s Unable to retreive your XP from the database", MOD_NAME );
 
 		log_amx( "[ERROR] Unable to retreive user's Unique ID" );
 

@@ -208,7 +208,7 @@ public PLAYER_ResetData( id )
 	// Reset the attribs
 	for ( i = 0; i < MAX_ATTRIBS; ++i )
 	{
-		p_data_attrib[id][i] = 0;
+		p_data_attrib[id][i] = MAX_ATTRIBS_STARTPOINTS;
 	}
 	
 	// Reset the resistance

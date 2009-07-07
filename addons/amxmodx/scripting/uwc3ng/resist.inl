@@ -4,7 +4,7 @@
 public RESIST_ShowSelectMenu( id )
 {
 	// The header
-	new MenuText[512] = "", KEYS = (1<<9) | (1<<8);
+	new MenuText[512] = "", KEYS = (1<<9) | (1<<8) | (1<<7);
 	formatex( MenuText, charsmax( MenuText ), "\ySelect a Resistance to enhance [%d pts remaining]: \w^n", p_data[id][AVAILABLE_RESISTS] );
 	add( MenuText, charsmax( MenuText ), "\y(say /resistinfo for info about resistances) \w^n^n" );
 	
@@ -16,6 +16,18 @@ public RESIST_ShowSelectMenu( id )
 		
 		// Add every keypoint
 		KEYS |= (1<<i);
+	}
+	
+	// Add the Set fill menupoint
+	if ( !p_data_b[id][RESIST_FILLRESIST] )
+	{
+		add( MenuText, charsmax( MenuText ), "^n\w8. Set fill Resists^n" );
+	}
+	
+	// Add the Set one menupoint
+	else
+	{
+		add( MenuText, charsmax( MenuText ), "^n\w8. Set one Resist^n" );
 	}
 	
 	// Add the attrib menupoint
@@ -41,6 +53,21 @@ public RESIST_HandleMenu( id, key )
 	// The player exit the menu
 	if ( key == 9 )
 	{
+		// Reset the data
+		p_data_b[id][RESIST_FILLRESIST] = false;
+		
+		return;
+	}
+	
+	// the player want fill / one resist menupoint
+	else if ( key == 7 )
+	{
+		p_data_b[id][RESIST_FILLRESIST] = ( p_data_b[id][RESIST_FILLRESIST] ? false : true );
+	
+		// Show him the menu again
+		RESIST_ShowSelectMenu( id )
+		
+		// Go out of this shit
 		return;
 	}
 	
@@ -63,16 +90,39 @@ public RESIST_HandleMenu( id, key )
 	// The player has no available attribute points
 	else if ( p_data[id][AVAILABLE_RESISTS] <= 0 )
 	{
-		client_print( id, print_chat, "%s You do not have any Resistance points to spend, earn more E-XP", MOD_NAME );
+		client_print( id, print_chat, "%s You do not have any Resistance points to spend, earn more XP", MOD_NAME );
 		
 		return;
 	}
 	
-	// Alright. Add one point
-	p_data_resist[id][key]++;
+	// The player want to fill the complete resist
+	if ( p_data_b[id][RESIST_FILLRESIST] )
+	{
+		while ( p_data_resist[id][key] != MAX_RESIST_POINTS )
+		{
+			// Alright. Add one point
+			p_data_resist[id][key]++;
 	
-	// Remove one from the available points
-	p_data[id][AVAILABLE_RESISTS]--;
+			// Remove one from the available points
+			p_data[id][AVAILABLE_RESISTS]--;
+			
+			// We have no available resists - go out!
+			if ( p_data[id][AVAILABLE_RESISTS] == 0 )
+			{
+				break;
+			}
+		}
+	}
+	
+	// Fill only with one point
+	else
+	{
+		// Alright. Add one point
+		p_data_resist[id][key]++;
+	
+		// Remove one from the available points
+		p_data[id][AVAILABLE_RESISTS]--;
+	}
 	
 	// Print him a message
 	client_print( id, print_chat, "%s You spend 1 Resistance point to %s", MOD_NAME, Resistance_Names[key] );
@@ -81,7 +131,24 @@ public RESIST_HandleMenu( id, key )
 	if ( p_data[id][AVAILABLE_RESISTS] > 0 )
 	{
 		RESIST_ShowSelectMenu( id );
+		
+		return;
 	}
+	
+	// He has available attribs
+	else if ( p_data[id][AVAILABLE_ATTRIBS] > 0 )
+	{
+		ATTRIB_ShowSelectMenu( id );
+	}
+	
+	// The player has more available skills, reopen the menu!
+	else if ( p_data[id][AVAILABLE_SKILL] > 0 )
+	{
+		SKILL_ShowMenu( id, p_data[id][SKILL_SIDE] );
+	}
+	
+	// Reset the data
+	p_data_b[id][RESIST_FILLRESIST] = false;
 	
 	return;
 }
@@ -94,9 +161,29 @@ public RESIST_Check_Available_points( id )
 	
 	// Calculate the default available resists for this player
 	new iAvailablePoints = ( p_data[id][PLAYER_LVL] * ( MAX_RESIST_AVAILABLE / MAX_LEVEL ) );
+	
+	// Check if we have Longterm XP (no savexp)
+	if ( !get_pcvar_num( CVAR_uwc3ng_save_xp ) )
+	{
+		iAvailablePoints /= get_pcvar_float( CVAR_uwc3ng_resist_xpmodifier );
+	}
+	
+	// Calculate the difference
+	iAvailablePoints = ( iAvailablePoints -  iSelectedResists );
+	
+	// Check if the player has more resistpoints spent as available
+	if ( iAvailablePoints < 0 )
+	{
+		// We have to reset all resists
+		p_data_b[id][RESET_RESISTS] = true;
+		RESIST_ResetAllNow( id );
 		
-	// Save the available attrib points
-	p_data[id][AVAILABLE_RESISTS] = ( iAvailablePoints -  iSelectedResists );
+		// Jump out the loop and the function
+		return;
+	}
+		
+	// Save the available resistpoints
+	p_data[id][AVAILABLE_RESISTS] = iAvailablePoints;
 	
 	return;
 }
@@ -137,7 +224,7 @@ public RESIST_ResetAllNow( id )
 		}
 			
 		// Detect new available resist points
-		RESIST_Check_Available_points( id )
+		RESIST_Check_Available_points( id );
 			
 		// Next round the resists should no more reseted
 		p_data_b[id][RESET_RESISTS] = false;

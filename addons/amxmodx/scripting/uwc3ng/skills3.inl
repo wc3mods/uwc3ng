@@ -7,7 +7,7 @@ public SKILL_ThornsAura( iAttacker, iVictim, iDamage, iHitPlace )
 
 	// Thorns Aura ( attacker could be dead... i.e. nade )
 	iSkillLevel = p_data_skill[iVictim][SKILL_THORNSAURA];
-	if ( iSkillLevel && is_user_alive( iAttacker ) && !p_data_b[iVictim][PB_HEXED] )
+	if ( iSkillLevel && is_user_alive( iAttacker ) )
 	{
 		static iAdditionalDamage;
 		iAdditionalDamage = floatround( float( iDamage ) * p_thorns[iSkillLevel-1] );
@@ -421,7 +421,7 @@ public SKILL_CriticalStrike( iAttacker, iVictim, iDamage, iHitPlace, iWeapon )
 	new iSkillLevel = p_data_skill[iAttacker][SKILL_SHADOWSTRIKE];
 	
 	// Has this player critical strike?
-	if ( iSkillLevel && !p_data_b[iAttacker][PB_HEXED] )
+	if ( iSkillLevel )
 	{
 		// Will this hit a critical hit?
 		if ( random_float( 0.0, 1.0 ) <= p_critical[iSkillLevel-1] )
@@ -467,7 +467,7 @@ public SKILL_DispellHex( id )
 	// Is the player hexed?
 	if ( !p_data_b[FriendID][PB_HEXED] )
 	{
-		client_print( id, print_chat, "%s Your teammate isnt hexed at the moment", MOD_NAME );
+		UWC3NG_StatusText( id, TXT_SKILL, "Your teammate isnt hexed at the moment" );
 		
 		return;
 	}
@@ -475,7 +475,7 @@ public SKILL_DispellHex( id )
 	// Amount of repairs are calculated with the level from the player
 	if ( p_data[id][P_DISPELL] >= ( p_data[id][PLAYER_LVL] / DISPELL_DIVISOR ) )
 	{
-		client_print( id, print_chat, "%s You have already performed the maximum number of dispells for this round", MOD_NAME );
+		UWC3NG_StatusText( id, TXT_SKILL, "You have already performed the maximum number of dispells for this round" );
 		
 		return;
 	}
@@ -530,7 +530,7 @@ public SKILL_CarrionBeetles( iAttacker, iVictim, iHitPlace )
 	new Float:iCarrionChance;
 	
 	// Has this player Carrion beetles and isn't hexed?
-	if ( iSkillLevel && !p_data_b[iAttacker][PB_HEXED] )
+	if ( iSkillLevel )
 	{
 		// Add the carrion chance
 		iCarrionChance = p_carrion[iSkillLevel-1];
@@ -538,7 +538,7 @@ public SKILL_CarrionBeetles( iAttacker, iVictim, iHitPlace )
 		// The player has skilled disease resistance, add the bonus
 		if ( iDiseaseLevel )
 		{
-			iCarrionChance -= ( iDiseaseLevel / float( MAX_RESIST ) ) * iCarrionChance;
+			iCarrionChance -= ( iDiseaseLevel / float( MAX_RESIST_POINTS ) ) * iCarrionChance;
 		}
 		
 		// Will this hit a Carrion Beetles hit?
@@ -553,8 +553,41 @@ public SKILL_CarrionBeetles( iAttacker, iVictim, iHitPlace )
 			
 			// Play the carrion beetle sound
 			emit_sound( iVictim, CHAN_STATIC, g_szSounds[SOUND_CARRION], 1.0, ATTN_NORM, 0, PITCH_NORM );
-
-			UWC3NG_DoDamage( iVictim, iAttacker, CARRIONBEETLE_DAMAGE, CSW_CARRION, iHitPlace );
+			
+			// Set up a var for the dmg
+			new iDamage = CARRIONBEETLE_DAMAGE;
+			
+			// The player isn't diseased
+			if ( !p_data_b[iVictim][PB_CARRIONDOT] )
+			{
+				iDamage += CARRIONBEETLE_DOT;
+				
+				// the player is now diseased, show all that sprite
+				Create_CarrionShadowDOT( iVictim, g_iSprites[SPRITE_CARRIONBEETLES] );
+			
+				// The player is slowed
+				p_data_b[iVictim][PB_NORMALSPEED] = true;
+				set_task( 0.5, "SKILL_UnholyAura", ( iVictim + TASK_SPEED ) );
+			
+				// We should save the victim is diseased
+				p_data_b[iVictim][PB_CARRIONDOT] = true;
+			
+				// print a message
+				static AttackerName[32], VictimName[32];
+				get_user_name( iAttacker, AttackerName, charsmax( AttackerName ) );
+				get_user_name( iVictim, VictimName, charsmax( VictimName ) );
+				client_print( iAttacker, print_chat, "%s Your Carrion Beetles infect %s with disease", MOD_NAME, VictimName );
+				client_print( iVictim, print_chat, "%s Carrion Beetles from %s infect you with disease, seek a medic quickly!", MOD_NAME, AttackerName );
+			
+				//Set up the dot
+				new parm[2];
+				parm[0] = iVictim;
+				parm[1] = iAttacker;
+				set_task( DOT_TASKTIME, "SKILL_CarrionDot", ( TASK_CARRIONDOT + iVictim ), parm, 2 );
+			}
+			
+			// Do the damage
+			UWC3NG_DoDamage( iVictim, iAttacker, iDamage, CSW_CARRION, iHitPlace );
 		}
 
 		else if ( get_pcvar_num( CVAR_uwc3ng_psychostats ) )
@@ -568,13 +601,42 @@ public SKILL_CarrionBeetles( iAttacker, iVictim, iHitPlace )
 	return;
 }
 
+// Carrion Beetles desease damage
+public SKILL_CarrionDot( parm[2] )
+{
+	new iVictim = parm[0];
+	new iAttacker = parm[1];
+	
+	// is the player alive?
+	if ( is_user_alive( iVictim ) && p_data_b[iVictim][PB_CARRIONDOT] && is_user_connected( iAttacker ) )
+	{
+		// Do the dot damage
+		UWC3NG_DoDamage( iVictim, iAttacker, CARRIONBEETLE_DOT, CSW_CARRION, -1 );
+		
+		// And set up the new task
+		set_task( DOT_TASKTIME, "SKILL_CarrionDot", ( TASK_CARRIONDOT + iVictim ), parm, 2 );
+	}
+	
+	// the user died
+	else 
+	{
+		// he should better no more slowed
+		p_data_b[iVictim][PB_NORMALSPEED] = false;
+		
+		// Set the new speed
+		set_task( 0.1, "SKILL_UnholyAura", ( iVictim + TASK_SPEED ) );
+	}
+	
+	return;
+}
+
 // Steel Skin
 public SKILL_SteelSkin( iAttacker, iVictim, iDamage )
 {
 	new iSkillLevel = p_data_skill[iAttacker][SKILL_STEELSKIN];
 	
 	// Has this player steel skin?
-	if ( iSkillLevel && !p_data_b[iAttacker][PB_HEXED] )
+	if ( iSkillLevel )
 	{
 		// Will this hit a steel skin hit?
 		if ( random_float( 0.0, 1.0 ) <= p_steel[iSkillLevel-1] )
@@ -586,6 +648,12 @@ public SKILL_SteelSkin( iAttacker, iVictim, iDamage )
 			
 			// Add the bonus armor
 			iArmor += iDamage;
+			
+			// We're not give him more than he can have
+			if ( iArmor > 100 )
+			{
+				iArmor = 100;
+			}
 			
 			// Set the new armor
 			cs_set_user_armor( iAttacker, iArmor, ArmorType );
@@ -609,7 +677,7 @@ public SKILL_ShadowStrike( iAttacker, iVictim, iHitPlace )
 	new Float:iShadowChance;
 	
 	// Has this player ShadowStrike?
-	if ( iSkillLevel && !p_data_b[iAttacker][PB_HEXED])
+	if ( iSkillLevel )
 	{
 		// Add the shadow chance
 		iShadowChance = p_shadow[iSkillLevel-1];
@@ -617,7 +685,7 @@ public SKILL_ShadowStrike( iAttacker, iVictim, iHitPlace )
 		// The player has skilled poison resistance, add the bonus
 		if ( iResistLevel )
 		{
-			iShadowChance -= ( iResistLevel / float( MAX_RESIST ) ) * iShadowChance;
+			iShadowChance -= ( iResistLevel / float( MAX_RESIST_POINTS ) ) * iShadowChance;
 		}
 		
 		// Will this hit a ShadowStrike hit?
@@ -633,8 +701,37 @@ public SKILL_ShadowStrike( iAttacker, iVictim, iHitPlace )
 			// Emit the shadow strike sound
 			emit_sound( iVictim, CHAN_STATIC, g_szSounds[SOUND_SHADOWSTRIKE], 1.0, ATTN_NORM, 0, PITCH_NORM );
 
+			// Set up the dmg var
+			new iDamage = SHADOWSTRIKE_DAMAGE;
+			
+			// Is the player already poisoned?
+			if ( !p_data_b[iVictim][PB_SHADOWDOT] )
+			{
+				// Add the poison damage
+				iDamage += SHADOWSTRIKE_DOT;
+				
+				// Draw the sprite
+				Create_CarrionShadowDOT( iVictim, g_iSprites[SPRITE_SHADOWSTRIKEDOT] );
+			
+				// We should know that he has poison
+				p_data_b[iVictim][PB_SHADOWDOT] = true;
+			
+				// print a message
+				static AttackerName[32], VictimName[32];
+				get_user_name( iAttacker, AttackerName, charsmax( AttackerName ) );
+				get_user_name( iVictim, VictimName, charsmax( VictimName ) );
+				client_print( iAttacker, print_chat, "%s Your poison darts hit their mark on %s", MOD_NAME, VictimName );
+				client_print( iVictim, print_chat, "%s Poison darts from %s take their toll on you, seek a medic quickly!", MOD_NAME, AttackerName );
+			
+				//Set up the dot
+				new parm[2];
+				parm[0] = iVictim;
+				parm[1] = iAttacker;
+				set_task( DOT_TASKTIME, "SKILL_ShadowDot", ( TASK_SHADOWDOT + iVictim ), parm, 2 );
+			}
+				
 			// Damage the user
-			UWC3NG_DoDamage( iVictim, iAttacker, SHADOWSTRIKE_DAMAGE, CSW_SHADOW, iHitPlace );
+			UWC3NG_DoDamage( iVictim, iAttacker, iDamage, CSW_SHADOW, iHitPlace );
 		}
 
 		else if ( get_pcvar_num( CVAR_uwc3ng_psychostats ) )
@@ -648,6 +745,25 @@ public SKILL_ShadowStrike( iAttacker, iVictim, iHitPlace )
 	return;
 }
 
+// Shadow Strike poison damage
+public SKILL_ShadowDot( parm[2] )
+{
+	new iVictim = parm[0];
+	new iAttacker = parm[1];
+	
+	// is the player alive?
+	if ( is_user_alive( iVictim ) && is_user_connected( iAttacker ) && p_data_b[iVictim][PB_SHADOWDOT] )
+	{
+		// Do the dot damage
+		UWC3NG_DoDamage( iVictim, iAttacker, SHADOWSTRIKE_DOT, CSW_SHADOW, -1 );
+		
+		// And set up the new task
+		set_task( DOT_TASKTIME, "SKILL_ShadowDot", ( TASK_SHADOWDOT + iVictim ), parm, 2 );
+	}
+	
+	return;
+}
+
 // Blink
 public SKILL_Blink( id )
 {
@@ -656,12 +772,6 @@ public SKILL_Blink( id )
 	// User has the ability, lets initiate a "check"
 	if ( iSkillLevel )
 	{
-		// We don't need to check if they already have this!
-		if ( p_data_b[id][PB_BLINK] )
-		{
-			return;
-		}
-
 		if ( random_float( 0.0, 1.0 ) <= p_blink[iSkillLevel-1] )
 		{
 			p_data_b[id][PB_BLINK] = true;

@@ -152,10 +152,14 @@ public MYSQLX_Save( id )
 			return;
 		}
 	}
+	
+	new szKey[66], szKeyName[32];
+	Save_GetKey( id, szKey, charsmax( szKey ) );
+	Save_GetKeyName( szKeyName, charsmax( szKeyName ) );
 
 	// Save the user's XP!
 	new szQuery[512];
-	format( szQuery, charsmax( szQuery ), "UPDATE `uwc3ng_player` SET `player_xp`='%d' WHERE `player_id`='%d'", p_data[id][PLAYER_XP], p_data[id][PLAYER_UNIQUEID] );
+	format( szQuery, charsmax( szQuery ), "REPLACE INTO `uwc3ng_player` ( `player_id` , `%s` , `player_xp` ) VALUES ( '%d', '%s', '%d');", szKeyName, p_data[id][PLAYER_UNIQUEID], szKey, p_data[id][PLAYER_XP] );
 	new Handle:query = SQL_PrepareQuery( g_DBConn, szQuery );
 
 	if ( !SQL_Execute( query ) )
@@ -171,63 +175,54 @@ public MYSQLX_Save( id )
 	static i;
 	for ( i = 0; i < MAX_SKILLS; ++i )
 	{
-		if ( p_data_skill[id][i] != 0 )
-		{
-			format( szQuery, charsmax( szQuery ), "REPLACE INTO `uwc3ng_skill` ( `player_id` , `skill_id` , `skill_level` ) VALUES ( '%d', '%d', '%d' );", p_data[id][PLAYER_UNIQUEID], i, p_data_skill[id][i] ); 
-			query = SQL_PrepareQuery( g_DBConn, szQuery );
+		format( szQuery, charsmax( szQuery ), "REPLACE INTO `uwc3ng_skill` ( `player_id` , `skill_id` , `skill_level` ) VALUES ( '%d', '%d', '%d' );", p_data[id][PLAYER_UNIQUEID], i, p_data_skill[id][i] ); 
+		query = SQL_PrepareQuery( g_DBConn, szQuery );
 			
-			// Check if the DB ready
-			if ( !SQL_Execute( query ) )
-			{
-				client_print( id, print_chat, "%s Error, unable to save your XP, please contact a server administrator", MOD_NAME );
+		// Check if the DB ready
+		if ( !SQL_Execute( query ) )
+		{
+			client_print( id, print_chat, "%s Error, unable to save your XP, please contact a server administrator", MOD_NAME );
 	
-				MYSQLX_Error( query, szQuery, 5 );
+			MYSQLX_Error( query, szQuery, 5 );
 
-				return;
-			}
+			return;
 		}
 	}
-	
+		
 	// We have to save the attribs
 	for ( i = 0; i < MAX_ATTRIBS; ++i )
 	{
-		if ( p_data_attrib[id][i] != MAX_ATTRIBS_STARTPOINTS )
-		{
-			format( szQuery, charsmax( szQuery ), "REPLACE INTO `uwc3ng_attrib` ( `player_id` , `attrib_id` , `attrib_level` ) VALUES ( '%d', '%d', '%d' );", p_data[id][PLAYER_UNIQUEID], i, p_data_attrib[id][i] ); 
-			query = SQL_PrepareQuery( g_DBConn, szQuery );
+		format( szQuery, charsmax( szQuery ), "REPLACE INTO `uwc3ng_attrib` ( `player_id` , `attrib_id` , `attrib_level` ) VALUES ( '%d', '%d', '%d' );", p_data[id][PLAYER_UNIQUEID], i, p_data_attrib[id][i] ); 
+		query = SQL_PrepareQuery( g_DBConn, szQuery );
 			
-			// Check if the DB ready
-			if ( !SQL_Execute( query ) )
-			{
-				client_print( id, print_chat, "%s Error, unable to save your XP, please contact a server administrator", MOD_NAME );
+		// Check if the DB ready
+		if ( !SQL_Execute( query ) )
+		{
+			client_print( id, print_chat, "%s Error, unable to save your XP, please contact a server administrator", MOD_NAME );
 	
-				MYSQLX_Error( query, szQuery, 5 );
+			MYSQLX_Error( query, szQuery, 5 );
 
-				return;
-			}
+			return;
 		}
 	}
-	
+		
 	// We have to save the resistans
 	for ( i = 0; i < MAX_RESIST; ++i )
 	{
-		if ( p_data_resist[id][i] != 0 )
-		{
-			format( szQuery, charsmax( szQuery ), "REPLACE INTO `uwc3ng_resist` ( `player_id` , `resist_id` , `resist_level` ) VALUES ( '%d', '%d', '%d' );", p_data[id][PLAYER_UNIQUEID], i, p_data_resist[id][i] ); 
-			query = SQL_PrepareQuery( g_DBConn, szQuery );
+		format( szQuery, charsmax( szQuery ), "REPLACE INTO `uwc3ng_resist` ( `player_id` , `resist_id` , `resist_level` ) VALUES ( '%d', '%d', '%d' );", p_data[id][PLAYER_UNIQUEID], i, p_data_resist[id][i] ); 
+		query = SQL_PrepareQuery( g_DBConn, szQuery );
 			
-			// Check if the DB ready
-			if ( !SQL_Execute( query ) )
-			{
-				client_print( id, print_chat, "%s Error, unable to save your XP, please contact a server administrator", MOD_NAME );
+		// Check if the DB ready
+		if ( !SQL_Execute( query ) )
+		{
+			client_print( id, print_chat, "%s Error, unable to save your XP, please contact a server administrator", MOD_NAME );
 	
-				MYSQLX_Error( query, szQuery, 5 );
+			MYSQLX_Error( query, szQuery, 5 );
 
-				return;
-			}
+			return;
 		}
 	}
-
+	
 	return;
 }
 

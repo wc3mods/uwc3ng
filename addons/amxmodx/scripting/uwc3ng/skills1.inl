@@ -18,7 +18,7 @@ public SKILL_Levitation( id )
 		new Float:fGravityLevel = 1.0;
 
 		// If this user does want their gravity to be changed!
-		if ( ( iSkillLevel > 0 ) && !p_data_b[id][PB_HEXED] )
+		if ( iSkillLevel > 0 ) 
 		{
 			fGravityLevel = p_levitation[iSkillLevel-1];
 		}
@@ -115,13 +115,13 @@ public SKILL_Impale( iAttacker, iVictim )
 	new Float:iImpaleChance;
 	
 	// Has this player impale?
-	if ( iLevel && !p_data_b[iAttacker][PB_HEXED] )
+	if ( iLevel )
 	{
 		// Add the impale chance
 		iImpaleChance = p_impale[iLevel-1];
 		
 		// The player has skilled intellect, give him the bonus
-		if ( p_data_attrib[iAttacker][ATTRIB_INTELLECT] == INTELLECT_IMPALE )
+		if ( p_data_attrib[iAttacker][ATTRIB_INTELLECT] >= INTELLECT_IMPALE )
 		{
 			iImpaleChance += INTELLECT_IMPALE_BONUS;
 		}
@@ -153,25 +153,8 @@ public SKILL_DevotionAura( id )
 {
 	new iLevel = p_data_skill[id][SKILL_DEVOTION];
 	new iLevelStrength = p_data_attrib[id][ATTRIB_STRENGTH];
-	new iHealth = get_user_health( id );
-	
-	// The player is hexed
-	if ( p_data_b[id][PB_HEXED] )
-	{
-		// The player has about 100 health. Set it back to 100
-		if ( iHealth > 100 )
-		{
-			set_user_health( id, 100 );
-		}
-		
-		return;
-	}
-	
 	new iBonusHealth = 0;
-	
-	// Reset the health to 100
-	iHealth = 100;
-	
+		
 	// Has this player devotion aura?
 	if ( iLevel )
 	{
@@ -187,7 +170,7 @@ public SKILL_DevotionAura( id )
 	// Add the new health
 	if ( iBonusHealth != 0 )
 	{
-		set_user_health( id, ( iHealth + iBonusHealth ) );
+		set_user_health( id, ( 100 + iBonusHealth ) );
 	}
 	
 	return;
@@ -214,16 +197,28 @@ public SKILL_HealingWave( id )
 	
 	// Get the level
 	new iLevel = p_data_skill[id][SKILL_HEALINGWAVE];
+	new iLevelConst = p_data_attrib[id][ATTRIB_CONSTITUTION];
 	
-	// Set up the task
-	set_task( p_heal[iLevel-1], "SKILL_HealingWave", id + TASK_WAVE );
+	// Calculate the true Constitution level
+	iLevelConst -= MAX_ATTRIBS_STARTPOINTS;
 	
 	// Has this player healing wave?
-	if ( iLevel )
+	if ( iLevel > 0 || iLevelConst > 0 )
 	{
+		// Here we save the time for the task
+		new Float:iHealTime = p_heal[0];
+	
+		// Set up the first task for healing wave
+		if ( iLevel )
+		{
+			iHealTime = p_heal[iLevel-1];
+		}
+	
+		set_task( iHealTime, "SKILL_HealingWave", id + TASK_WAVE );
+		
 		// Get all players
 		static i, players[32], numofplayers, iTeam;
-		static origin[3], iHealth;
+		static origin[3], iHealth, iMaxHealth, iAmountHeal;
 		get_players( players, numofplayers );
 		
 		// Get the team from the skill owner
@@ -238,17 +233,25 @@ public SKILL_HealingWave( id )
 				// Is the player in range?
 				if ( PLAYER_is_in_range( id, players[i], HEALING_WAVE_RANGE ) )
 				{
-					// Get the health from this player
+					// Get the health/maxhealth from this player
 					iHealth = get_user_health( players[i] );
+					iMaxHealth = PLAYER_get_maxhealth( players[i] );
+					
+					// Calculate the amount of heal depending on constitution
+					iAmountHeal = ( HEALING_WAVE_HEAL + iLevelConst );
 					
 					// We're at the maximum. Switch to the next player
-					if ( iHealth >= PLAYER_get_maxhealth( players[i] ) )
+					if ( iHealth == iMaxHealth )
 					{
 						continue;
 					}
 					
-					// Add one health
-					iHealth++;
+					// Add health
+					iHealth += iAmountHeal;
+					
+					// oops, we are about the maxhealth, reduce it
+					if ( iHealth > iMaxHealth )
+						iHealth = iMaxHealth;
 					
 					// Set the new health
 					set_user_health( players[i], iHealth );
@@ -279,13 +282,13 @@ public SKILL_SiphonMana( iAttacker, iVictim, iDamage )
 	}
 	
 	// Has this player siphon mana?
-	if ( iLevel && !p_data_b[iAttacker][PB_HEXED] )
+	if ( iLevel )
 	{
 		// Add the siphon chance
 		iSiphonChance = p_mana[iLevel-1];
 		
 		// The player has skilled intellect, add the bonus
-		if ( p_data_attrib[iAttacker][ATTRIB_INTELLECT] == INTELLECT_SIPHON )
+		if ( p_data_attrib[iAttacker][ATTRIB_INTELLECT] >= INTELLECT_SIPHON )
 		{
 			iSiphonChance += INTELLECT_SIPHON_BONUS;
 		}
@@ -331,12 +334,12 @@ public SKILL_LeatherSkin( id )
 	// Get the level
 	new iLevel = p_data_skill[id][SKILL_LSKIN];
 	
-	// Set up the task
-	set_task( p_lskin[iLevel-1], "SKILL_LeatherSkin", id + TASK_SKIN );
-	
 	// Has this player leather skin?
 	if ( iLevel )
 	{
+		// Set up the task
+		set_task( p_lskin[iLevel-1], "SKILL_LeatherSkin", id + TASK_SKIN );
+		
 		// Get all players
 		static i, players[32], numofplayers, iTeam;
 		static origin[3], CsArmorType:ArmorType, iArmor;
@@ -358,7 +361,7 @@ public SKILL_LeatherSkin( id )
 					iArmor = cs_get_user_armor( players[i], ArmorType );
 					
 					// We're at the maximum. Switch to the next player
-					if ( iArmor >= 100 )
+					if ( iArmor >= 100 || iArmor <= 0 )
 					{
 						continue;
 					}
@@ -388,7 +391,7 @@ public SKILL_VampiricAura( iAttacker, iDamage )
 	new iLevel = p_data_skill[iAttacker][SKILL_VAMPIRIC];
 	
 	// Has this user vampiric aura?
-	if ( iLevel && !p_data_b[iAttacker][PB_HEXED] )
+	if ( iLevel )
 	{
 		static iHealth, iMaxHealth, iBonusHealth;
 

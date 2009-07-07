@@ -269,13 +269,13 @@ public XP_SetUpTable()
 		// The first 10 level's should be easy to get
 		else if ( i <= 10 )
 		{
-			g_XPforLevel[i] = floatround( float( g_XPforLevel[i-1] ) * 0.80 ) + XPs;
+			g_XPforLevel[i] = floatround( float( g_XPforLevel[i-1] ) * 1.00 ) + XPs;
 		}
 			
 		// 11 till 20 
 		else if ( i <= 20 )
 		{
-			g_XPforLevel[i] = floatround( float( g_XPforLevel[i-1] ) * 1.00 ) + XPs;
+			g_XPforLevel[i] = floatround( float( g_XPforLevel[i-1] ) * 1.10 ) + XPs;
 		}
 			
 		// 21 till 30
@@ -287,19 +287,19 @@ public XP_SetUpTable()
 		// 31 till 40
 		else if ( i <= 40 )
 		{
-			g_XPforLevel[i] = floatround( float( g_XPforLevel[i-1] ) * 1.45 ) + XPs;
+			g_XPforLevel[i] = floatround( float( g_XPforLevel[i-1] ) * 1.35 ) + XPs;
 		}
 		
 		// 41 till 50
 		else if ( i <= 50 )
 		{
-			g_XPforLevel[i] = floatround( float( g_XPforLevel[i-1] ) * 1.50 ) + XPs;
+			g_XPforLevel[i] = floatround( float( g_XPforLevel[i-1] ) * 1.45 ) + XPs;
 		}
-		
+			
 		// All other (should not called)
 		else
 		{
-			g_XPforLevel[i] = floatround( float( g_XPforLevel[i-1] ) * 1.50 ) + XPs;
+			g_XPforLevel[i] = floatround( float( g_XPforLevel[i-1] ) * 2.50 );
 		}
 	}
 	
@@ -348,10 +348,14 @@ public XP_TableShow( id )
 		return PLUGIN_CONTINUE;
 	}
 	
-	static i;
+	static i, iTotalXP;
 	for ( i = 0; i <= MAX_LEVEL; ++i )
 	{
-		client_print( id, print_console, "Level %d: %d", i, g_XPforLevel[i] );
+		// Calculate all XPs
+		iTotalXP += g_XPforLevel[i];
+		
+		// Show him the table
+		client_print( id, print_console, "[Level %d] XP: %d  Total XP: %d", i, g_XPforLevel[i], iTotalXP );
 	}
 	
 	return PLUGIN_HANDLED;
@@ -386,7 +390,7 @@ public XP_onDeath( iVictim, iAttacker, iWeaponIndex, iHeadshot )
 	new iBonusXP, iXP = floatround( float( XP_Calc( iAttacker, KILL_ENEMY_XP ) ) * fWpnXPMultiplier[iWeaponIndex] );
 
 	// Check for a team kill
-	if ( get_user_team( iAttacker ) == get_user_team( iVictim ) )
+	if ( get_user_team( iAttacker ) == get_user_team( iVictim ) && CVAR_csdm_active <= 0 )
 	{
 		// Remove XP since he killed his teammate
 		iBonusXP = XP_Give( iAttacker, -1 * iXP );
@@ -396,7 +400,6 @@ public XP_onDeath( iVictim, iAttacker, iWeaponIndex, iHeadshot )
 		{
 			client_print( iAttacker, print_chat, "%s You have lost %d XP for killing a teammate", MOD_NAME, -1 * iBonusXP );
 		}
-
 	}
 
 	// Otherwise the player killed the other team
@@ -444,7 +447,7 @@ public XP_onDeath( iVictim, iAttacker, iWeaponIndex, iHeadshot )
 				iAssistXP = XP_Calc( id, KILL_ENEMY_XP );
 
 				// Need a ratio of XP to award to person who dealt damage
-				iBonusXP = XP_Give( i, ( floatround( float( iAssistXP ) * fMultiplier ) / 2 ) );
+				iBonusXP = XP_Give( id, ( floatround( float( iAssistXP ) * fMultiplier ) / 2 ) );
 
 				if ( iBonusXP != 0 )
 				{

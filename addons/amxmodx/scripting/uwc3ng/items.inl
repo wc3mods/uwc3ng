@@ -221,7 +221,7 @@ public ITEM_DisplayMessage( id, iItem )
 		case ITEM_CLOAK:
 		{
 			new Float:fInvis = 100.0 * ( float( get_pcvar_num( CVAR_uwc3ng_cloak ) ) / 255.0 );
-			client_print(id, print_chat,"%s You are now %0.0f%% less visible", MOD_NAME, fInvis );
+			client_print(id, print_chat,"%s You are now %0.0f%% visible", MOD_NAME, fInvis );
 		}
 
 		case ITEM_MASK:
@@ -440,7 +440,8 @@ public ITEM_Remove( id, iItemSlot, bResetAnkhMole )
 {
 	new iItem = g_iShopMenuItems[id][iItemSlot];
 
-	g_iShopMenuItems[id][iItemSlot] = ITEM_NONE;
+	if ( g_iShopMenuItems[id][iItemSlot] != ITEM_SCROLL )
+		g_iShopMenuItems[id][iItemSlot] = ITEM_NONE;
 
 	switch( iItem )
 	{
@@ -864,11 +865,26 @@ public _ITEM_Ring( id )
 public ITEM_Scroll( id )
 {
 	// Make sure the user isn't about to respawn when we do these checks
-	if ( !p_data_b[id][PB_RESPAWNED] )
+	if ( !p_data_b[id][PB_RESPAWNED] || !p_data_b[id][PB_RESPAWNED_TWICE] )
 	{
 		p_data_b[id][PB_RESPAWNED] = true;
-
+		
 		set_task( SPAWN_DELAY, "_SHARED_Spawn", TASK_SPAWN + id );
+	}
+	
+	// Okay give him his money back
+	else 
+	{
+		// Remove the Scroll
+		if ( g_iShopMenuItems[id][ITEM_SLOT_ONE] == ITEM_SCROLL )
+			g_iShopMenuItems[id][ITEM_SLOT_ONE] = ITEM_NONE;
+		else if ( g_iShopMenuItems[id][ITEM_SLOT_TWO] == ITEM_SCROLL )
+			g_iShopMenuItems[id][ITEM_SLOT_TWO] = ITEM_NONE;
+			
+		// The player should know why
+		client_print( id, print_chat, "%s Unable to respawn because you respawned allready this round, here is your money back", MOD_NAME );
+
+		SHARED_SetUserMoney( id, ITEM_Cost( id, ITEM_SCROLL ) );
 	}
 }
 

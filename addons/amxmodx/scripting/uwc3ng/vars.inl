@@ -10,16 +10,14 @@ new uwc3ng_enabled, CVAR_uwc3ng_savexp, CVAR_uwc3ng_save_xp, CVAR_uwc3ng_host,
      CVAR_uwc3ng_spec_position, CVAR_mp_friendlyfire, CVAR_uwc3ng_boots, CVAR_uwc3ng_claw,
      CVAR_uwc3ng_cloak, CVAR_uwc3ng_mask, CVAR_uwc3ng_frost, CVAR_uwc3ng_health, CVAR_uwc3ng_glove_timer,
      CVAR_uwc3ng_tome, CVAR_uwc3ng_sock, CVAR_uwc3ng_bot_buy_item, CVAR_uwc3ng_bot_startlevel,
-     CVAR_uwc3ng_startlevel, CVAR_uwc3ng_minmodels;
+     CVAR_uwc3ng_startlevel, CVAR_uwc3ng_minmodels, CVAR_uwc3ng_icons, CVAR_uwc3ng_attrib_xpmodifier,
+     CVAR_uwc3ng_resist_xpmodifier, CVAR_uwc3ng_save_end_round;
 
 // Where we save our data?
 new g_SaveType = -1;
 
 // Database vars
 new Handle:g_DBTuple, Handle:g_DBConn;
-
-// Nvault var
-new nvault_handle = INVALID_HANDLE;
 
 // Player Data arrays
 new p_data[MAX_PLAYERS][MAX_DATA], p_data_skill[MAX_PLAYERS][MAX_SKILLS], bool:p_data_b[MAX_PLAYERS][MAX_DATA_B],
@@ -70,7 +68,6 @@ new iStatsDamage[MAX_PLAYERS][MAX_CSW_S];
 new bool:g_bPlayerZoomed[MAX_PLAYERS];
 
 // Serpent Ward 
-new g_SerpentGiven[MAX_PLAYERS];
 new bool:bWardBombCheck = false;
 
 // Objectives
