@@ -37,6 +37,7 @@
 #define TASK_SPAWNPLAYER 1000
 #define TASK_CARRIONDOT 1033
 #define TASK_SHADOWDOT 1066
+#define TASK_ULT_START_DELAY 1100
 
 // -------------------------------------- General --------------------------------------
 // General define's

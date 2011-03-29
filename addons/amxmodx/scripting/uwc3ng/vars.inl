@@ -11,7 +11,8 @@ new uwc3ng_enabled, CVAR_uwc3ng_savexp, CVAR_uwc3ng_save_xp, CVAR_uwc3ng_host,
      CVAR_uwc3ng_cloak, CVAR_uwc3ng_mask, CVAR_uwc3ng_frost, CVAR_uwc3ng_health, CVAR_uwc3ng_glove_timer,
      CVAR_uwc3ng_tome, CVAR_uwc3ng_sock, CVAR_uwc3ng_bot_buy_item, CVAR_uwc3ng_bot_startlevel,
      CVAR_uwc3ng_startlevel, CVAR_uwc3ng_minmodels, CVAR_uwc3ng_icons, CVAR_uwc3ng_attrib_xpmodifier,
-     CVAR_uwc3ng_resist_xpmodifier, CVAR_uwc3ng_save_end_round;
+     CVAR_uwc3ng_resist_xpmodifier, CVAR_uwc3ng_save_end_round, CVAR_uwc3ng_ult_round_start_cd,
+     CVAR_uwc3ng_hudmessage_display;
 
 // Where we save our data?
 new g_SaveType = -1;
@@ -110,6 +111,9 @@ new g_iFlag[MAX_SHOPMENU_ITEMS] = { 0, ... };					// Stores information about it
 
 // Ignore the armory setting
 new bool:bIgnoreArmorSet[MAX_PLAYERS];
+
+// Ultimate round start delay
+new bool:g_bUltRoundDelay = false;
 /* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
 *{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1031\\ f0\\ fs16 \n\\ par }
 */

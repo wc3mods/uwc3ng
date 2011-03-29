@@ -57,6 +57,14 @@ public bool:ULTIMATE_CheckExecute( id, SkillID )
 		return false;
 	}
 	
+	// Ultimate after a specific time available
+	if ( !g_bUltRoundDelay )
+	{
+		client_print( id, print_chat, "%s You may not use this ability during round delay time", MOD_NAME );
+		
+		return false;
+	}
+	
 	// Player has no ultimate
 	if ( !p_data_skill[id][SkillID] )
 	{
@@ -110,6 +118,13 @@ public ULTIMATE_Delay()
 	}
 	
 	return;
+}
+
+// Ultimates can now be used
+public ULTIMATE_RemoveStartDelay()
+{
+	// Ultimates are now able to use
+	g_bUltRoundDelay = true;
 }
 
 // Reset the cooldown

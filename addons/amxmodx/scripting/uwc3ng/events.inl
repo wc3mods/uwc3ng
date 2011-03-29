@@ -535,6 +535,16 @@ public on_FreezeTimeComplete()
 		Create_Hud();
 	}
 	
+	// Set a task for the ultimate delay at round start
+	if ( task_exists( TASK_ULT_START_DELAY ) )
+	{
+		// Reset the task if exists
+		remove_task( TASK_ULT_START_DELAY );
+	}
+	set_task( float( get_pcvar_num( CVAR_uwc3ng_ult_round_start_cd ) ), "ULTIMATE_RemoveStartDelay", TASK_ULT_START_DELAY );
+	
+		
+	
 	// We loop through every player
 	static i, players[32], numofplayers;
 	get_players( players, numofplayers );

@@ -352,13 +352,44 @@ public SKILL_Update( id )
 public SKILL_Damage( iAttacker, iVictim, iDamage, iHitPlace, iWeapon )
 {
 	// Wtf, the player is away.
-	if ( !is_user_alive( iVictim ) || !is_user_connected( iAttacker ) )
+	if ( !is_user_connected( iVictim ) || !is_user_connected( iAttacker ) )
 	{
 		return;
 	}
 	
-	// Impale
-	SKILL_Impale( iAttacker, iVictim );
+	// Just check this when the victim is alive
+	if ( is_user_alive( iVictim ) ) 
+	{
+		// Impale
+		SKILL_Impale( iAttacker, iVictim );
+		
+		// Spiked Carapace
+		SKILL_SpikedCarapace( iAttacker, iVictim, iDamage, iHitPlace );
+	
+		// Hex
+		SKILL_Hex( iAttacker, iVictim );
+	
+		// Bash
+		SKILL_Bash( iAttacker, iVictim );
+	
+		// Banish
+		SKILL_Banish( iAttacker, iVictim );
+	
+		// Critical Strike
+		SKILL_CriticalStrike( iAttacker, iVictim, iDamage, iHitPlace, iWeapon );
+	
+		// Carrion Beetles
+		SKILL_CarrionBeetles( iAttacker, iVictim, iHitPlace );
+		
+		// Shadow Strike
+		SKILL_ShadowStrike( iAttacker, iVictim, iHitPlace );
+	
+		// Critical Grenade
+		SKILL_CriticalGrenade( iAttacker, iVictim, iDamage, iWeapon, iHitPlace );
+		
+		// Trueshot Aura
+		SKILL_TrueShotAura( iAttacker, iVictim, iWeapon, iDamage, iHitPlace );
+	}
 	
 	// Siphon Mana
 	SKILL_SiphonMana( iAttacker, iVictim, iDamage );
@@ -366,38 +397,11 @@ public SKILL_Damage( iAttacker, iVictim, iDamage, iHitPlace, iWeapon )
 	// Vampiric Aura
 	SKILL_VampiricAura( iAttacker, iDamage );
 	
-	// Spiked Carapace
-	SKILL_SpikedCarapace( iAttacker, iVictim, iDamage, iHitPlace );
-	
-	// Hex
-	SKILL_Hex( iAttacker, iVictim );
-	
-	// Bash
-	SKILL_Bash( iAttacker, iVictim );
-	
-	// Banish
-	SKILL_Banish( iAttacker, iVictim );
-	
-	// Critical Strike
-	SKILL_CriticalStrike( iAttacker, iVictim, iDamage, iHitPlace, iWeapon );
-	
-	// Carrion Beetles
-	SKILL_CarrionBeetles( iAttacker, iVictim, iHitPlace );
-	
 	// Steel Skin
 	SKILL_SteelSkin( iAttacker, iVictim, iDamage );
 	
-	// Shadow Strike
-	SKILL_ShadowStrike( iAttacker, iVictim, iHitPlace );
-	
-	// Critical Grenade
-	SKILL_CriticalGrenade( iAttacker, iVictim, iDamage, iWeapon, iHitPlace );
-	
 	// Siphon Armor
 	SKILL_SiphonArmor( iAttacker, iVictim );
-	
-	// Trueshot Aura
-	SKILL_TrueShotAura( iAttacker, iVictim, iWeapon, iDamage, iHitPlace );
 	
 	// Offensive items
 	ITEM_Offensive( iAttacker, iVictim, iWeapon, iDamage, iHitPlace );

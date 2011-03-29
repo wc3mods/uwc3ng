@@ -43,6 +43,8 @@ public Load_Cvars()
 	CVAR_uwc3ng_spec_position = register_cvar ( "uwc3ng_spec_position", "0" );
 	CVAR_uwc3ng_minmodels = register_cvar ( "uwc3ng_minmodels", "1" ); // Enable or disable minmodels check
 	CVAR_uwc3ng_icons = register_cvar ( "uwc3ng_icons", "1" ); // Enable or Disable icons for wcrepair and wcmend
+	CVAR_uwc3ng_ult_round_start_cd = register_cvar ( "uwc3ng_ult_round_start_cd", "5" );
+	CVAR_uwc3ng_hudmessage_display = register_cvar ( "uwc3ng_hudmessage_display", "0" ); // Show items in a hudmessage (0) in a status text (1)
 	
 	// Items
 	CVAR_uwc3ng_boots = register_cvar ( "uwc3ng_boots", "0.10" );

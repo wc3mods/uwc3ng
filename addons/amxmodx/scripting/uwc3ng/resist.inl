@@ -98,10 +98,14 @@ public RESIST_HandleMenu( id, key )
 	// The player want to fill the complete resist
 	if ( p_data_b[id][RESIST_FILLRESIST] )
 	{
+		static iSpendResists = 0;
 		while ( p_data_resist[id][key] != MAX_RESIST_POINTS )
 		{
 			// Alright. Add one point
 			p_data_resist[id][key]++;
+			
+			// we count all spend resistance for the message 
+			iSpendResists++;
 	
 			// Remove one from the available points
 			p_data[id][AVAILABLE_RESISTS]--;
@@ -112,6 +116,9 @@ public RESIST_HandleMenu( id, key )
 				break;
 			}
 		}
+		
+		// Print him a message
+		client_print( id, print_chat, "%s You spend %d Resistance points to %s", MOD_NAME, iSpendResists, Resistance_Names[key] );
 	}
 	
 	// Fill only with one point
@@ -122,10 +129,10 @@ public RESIST_HandleMenu( id, key )
 	
 		// Remove one from the available points
 		p_data[id][AVAILABLE_RESISTS]--;
+		
+		// Print him a message
+		client_print( id, print_chat, "%s You spend 1 Resistance point to %s", MOD_NAME, Resistance_Names[key] );
 	}
-	
-	// Print him a message
-	client_print( id, print_chat, "%s You spend 1 Resistance point to %s", MOD_NAME, Resistance_Names[key] );
 	
 	// He has more available resist points re-open the menu
 	if ( p_data[id][AVAILABLE_RESISTS] > 0 )
@@ -166,6 +173,11 @@ public RESIST_Check_Available_points( id )
 	if ( !get_pcvar_num( CVAR_uwc3ng_save_xp ) )
 	{
 		iAvailablePoints /= get_pcvar_float( CVAR_uwc3ng_resist_xpmodifier );
+	}
+	
+	if ( iAvailablePoints > MAX_RESIST_AVAILABLE ) 
+	{
+		iAvailablePoints = MAX_RESIST_AVAILABLE;
 	}
 	
 	// Calculate the difference

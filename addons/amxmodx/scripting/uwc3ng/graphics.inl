@@ -115,8 +115,19 @@ public Create_Hud()
 				formatex ( DisplayMessage, charsmax( DisplayMessage ), "%s Magic Item: %s", DisplayMessage, ItemTwoName );
 			}
 			
-			// Okay. Show him the hudmessage
-			UWC3NG_StatusText( players[i], TXT_ULT_ITEM, DisplayMessage );
+			// How we have to show the message?
+			if ( get_pcvar_num( CVAR_uwc3ng_hudmessage_display ) == 1 )
+			{
+				// Show the message as status text
+				Create_StatusText( players[i], 0, DisplayMessage );
+			}
+			
+			// Hudmessage
+			else 
+			{
+				// Okay. Show him the hudmessage
+				UWC3NG_StatusText( players[i], TXT_ULT_ITEM, DisplayMessage );
+			}
 		}
 	}
 	

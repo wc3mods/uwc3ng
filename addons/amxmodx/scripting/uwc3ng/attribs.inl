@@ -115,15 +115,16 @@ public ATTRIB_Check_Available_points( id )
 	
 	// Calculate the default available attribs for this player
 	new iAvailablePoints = p_data[id][PLAYER_LVL];
-	if ( iAvailablePoints > MAX_ATTRIBS_AVAILABLE )
-	{
-		iAvailablePoints = MAX_ATTRIBS_AVAILABLE; 
-	}
-	
+		
 	// Look if we have Longterm XP
 	if ( !get_pcvar_num( CVAR_uwc3ng_save_xp ) )
 	{
 		iAvailablePoints /= get_pcvar_float( CVAR_uwc3ng_attrib_xpmodifier );
+	}
+	
+	if ( iAvailablePoints > MAX_ATTRIBS_AVAILABLE )
+	{
+		iAvailablePoints = MAX_ATTRIBS_AVAILABLE; 
 	}
 	
 	// Calculate the difference
